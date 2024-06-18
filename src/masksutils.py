@@ -90,9 +90,9 @@ def check_seg_valid(view, data, labels, autoclean=True):
 
             # Second check: Is the LV somewhat round? (Only SA)
             props = measure.regionprops(lv.astype(int))[0]
-            if props.eccentricity > 0.5:
+            if props.eccentricity > 0.6:
                 valid[i] = False
-                print('Eccentricity > 0.5 in {}, slice {}'.format(view.upper(), (i+1)))
+                print('Eccentricity > 0.6 in {}, slice {}'.format(view.upper(), (i+1)))
 
             # Third check: is the LV wall close?
             lst = measure.find_contours(lv, level = .5)

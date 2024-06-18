@@ -9,6 +9,7 @@ Created on Fri Sep  8 11:02:21 2023
 import os
 
 import numpy as np
+from scipy.spatial import ConvexHull
 import matplotlib.pyplot as plt
 from skimage import measure, morphology
 import nibabel as nib
@@ -165,28 +166,17 @@ class LGEImage:
             translations = np.load(transfile)
 
         slices = []
-        if len(self.data.shape) == 2:
-            data_slice = self.data
-            if not np.all(data_slice==0):   # avoid saving slices with no data
-                origin = nib.affines.apply_affine(self.affine, np.array([0,0,0]))
-                slc = CMRSlice(data_slice, origin, normal, 0, self, defseptum=defseptum)
-                if translations is not None:
-                    slc.accumulated_translation += translations[0]
+        for n in range(self.data.shape[2]):
+            data_slice = self.data[:,:,n]
+            if np.all(data_slice==0): continue   # avoid saving slices with no data
+            origin = nib.affines.apply_affine(self.affine, np.array([0,0,n]))
+            slc = CMRSlice(data_slice, origin, normal, n, self,
+                           lge_data = self.lge_data[:,:,n][self.lv_mask[:,:,n]], defseptum=defseptum)
+            if (translations is not None):
+                slc.accumulated_translation += translations[n]
 
-                if slc.valid:
-                    slices += [slc]
-        else:
-            for n in range(self.data.shape[2]):
-                data_slice = self.data[:,:,n]
-                if np.all(data_slice==0): continue   # avoid saving slices with no data
-                origin = nib.affines.apply_affine(self.affine, np.array([0,0,n]))
-                slc = CMRSlice(data_slice, origin, normal, n, self,
-                               lge_data = self.lge_data[:,:,n][self.lv_mask[:,:,n]], defseptum=defseptum)
-                if (translations is not None):
-                    slc.accumulated_translation += translations[n]
-
-                if slc.valid:
-                    slices += [slc]
+            if slc.valid:
+                slices += [slc]
 
         return slices
 
@@ -269,95 +259,158 @@ class CMRSlice:
 
         # If doing long axis, remove line segments at base which are common to LVendoCS and LVepiCS.
         if 'la' in self.cmr.view:
-            if os.path.exists(os.path.join(os.path.dirname(self.cmr.fname), self.cmr.view + '_delete_points.npz')):
-                print('Loading saved points to delete in contours. If you want to redo the selection, delete the file ' + self.cmr.view + '_delete_points.npz.')
-                delete_points = np.load(os.path.join(os.path.dirname(self.cmr.fname), self.cmr.view + '_delete_points.npz'))
-                delete_points = np.stack([delete_points['lvendo'], delete_points['lvepi'], delete_points['rvfw']])
-            else:
-                delete_points = -np.ones([3, self.cmr.data.shape[2], 200], dtype=int)
-            if not is_2chr:
-                [_, ia, ib] = ut.sharedRows(LVendoCS, LVepiCS)
-                LVendoCS = ut.deleteHelper(LVendoCS, ia, axis = 0)
-                LVepiCS = ut.deleteHelper(LVepiCS, ib, axis = 0)
+            pass
 
-                # Delete LV epi contours at the base
-                if len(LVepiCS) > 0:
-                    if np.any(delete_points[1, self.slice_number] >= 0):
-                        delete = delete_points[1, self.slice_number]
-                        delete = delete[delete >= 0]
-                        LVepiCS = ut.deleteHelper(LVepiCS, delete, axis = 0)
-                    else:
-                        _, ax = plt.subplots(1,1)
-                        ax.scatter(LVendoCS[:, 0], LVendoCS[:, 1], s=10, c='C0')
-                        pts = ax.scatter(LVepiCS[:, 0], LVepiCS[:, 1], s=10, c='C1')
-                        if self.has_rv:
-                            ax.scatter(RVseptCS[:, 0], RVseptCS[:, 1], s=10, c='C2')
-                            ax.scatter(RVFW_CS[:, 0], RVFW_CS[:, 1], s=10, c='C3')
-                        selector = SelectFromCollection(ax, pts, 'LV epi')
-                        plt.show()
-                        while selector.run:
-                            plt.pause(.5)
-                            pass
+            # if is_2chr:
+            #     # Get LA vector
+            #     prop = measure.regionprops(RVendo.astype(int))[0]
+            #     angle = prop.orientation
+            #     la_vector = np.array([np.cos(angle), np.sin(angle)])
+            #     delnodes = find_base_nodes(RVendoCS, la_vector, None)
+            #     RVendoCS = np.delete(RVendoCS, delnodes, axis=0)
 
-                        LVepiCS = ut.deleteHelper(LVepiCS, selector.ind, axis = 0)
-                        delete_points[1, self.slice_number, :len(selector.ind)] = selector.ind
+            # else:
+            #     # Get LA vector
+            #     prop = measure.regionprops(LVendo.astype(int))[0]
+            #     angle = prop.orientation
+            #     la_vector = np.array([np.cos(angle), np.sin(angle)])
+            #     sep_vector = np.mean(RVFW_CS, axis=0) - np.mean(LVendoCS, axis=0)
+            #     sep_vector = sep_vector/np.linalg.norm(sep_vector)
+
+            #     if '3ch' in self.cmr.view:
+            #         vector = la_vector #+ sep_vector*0.2
+            #     else:
+            #         vector = la_vector
+
+            #     print(self.cmr.view)
+            #     delnodes = find_base_nodes(LVendoCS, vector, sep_vector)
+            #     mv_points = LVendoCS[delnodes]
+            #     LVendoCS = np.delete(LVendoCS, delnodes, axis=0)
+            #     if not LVepiIsEmpty:
+            #         delnodes = find_base_nodes(LVepiCS, vector, sep_vector)
+            #         LVepiCS = np.delete(LVepiCS, delnodes, axis=0)
+            #     if self.has_rv and '4ch' in self.cmr.view:
+            #         # Find closest point to the LV apex
+            #         mv_centroid = np.mean(mv_points, axis=0)
+            #         lv_apex = LVendoCS[np.argmax(np.abs(np.dot(LVendoCS-mv_centroid, la_vector)))]
+            #         RVFW_CS_aux = np.vstack([RVFW_CS, RVFW_CS[0]])
+            #         rv_apex_inds = np.argsort(np.linalg.norm(RVFW_CS_aux-lv_apex, axis=1))[:2]
+            #         if rv_apex_inds[0] > rv_apex_inds[1]:
+            #             RVFW_CS_aux = RVFW_CS_aux[::-1]
+            #         else:
+            #             RVFW_CS_aux = RVFW_CS_aux
+
+            #         # Sort RVFW
+            #         RVFW_CS_sort = np.append(RVFW_CS_aux[rv_apex_inds[0]:], RVFW_CS_aux[:rv_apex_inds[0]], axis=0)[:-1]
+            #         weights = np.zeros(len(RVFW_CS_sort))
+            #         weights[int(len(weights)/3*2):] = 1
+
+            #         vector = vector/np.linalg.norm(vector)
+            #         delnodes = find_base_nodes(RVFW_CS_sort, vector, -sep_vector, weights=weights)
+            #         RVFW_CS = np.delete(RVFW_CS_sort, delnodes, axis=0)
 
 
-                # Delete LV epi contours at the base
-                if len(LVendoCS) > 0:
-                    if np.any(delete_points[0,self.slice_number] >= 0):
-                        delete = delete_points[0, self.slice_number]
-                        delete = delete[delete >= 0]
-                        LVendoCS = ut.deleteHelper(LVendoCS, delete, axis = 0)
-                    else:
-                        delete = np.zeros(200)
-                        _, ax = plt.subplots(1,1)
-                        pts = ax.scatter(LVendoCS[:, 0], LVendoCS[:, 1], s=10, c='C0')
-                        try:
-                            ax.scatter(LVepiCS[:, 0], LVepiCS[:, 1], s=10, c='C1')
-                        except:
-                            pass
-                        if self.has_rv:
-                            try:
-                                ax.scatter(RVseptCS[:, 0], RVseptCS[:, 1], s=10, c='C2')
-                            except:
-                                pass
-                            ax.scatter(RVFW_CS[:, 0], RVFW_CS[:, 1], s=10, c='C3')
-                        selector = SelectFromCollection(ax, pts, 'LV endo')
-                        plt.show()
-                        while selector.run:
-                            plt.pause(.5)
-                            pass
-                        LVendoCS = ut.deleteHelper(LVendoCS, selector.ind, axis = 0)
-                        delete_points[0, self.slice_number, :len(selector.ind)] = selector.ind
+                # plt.figure(1, clear=True)
+                # plt.imshow(self.data.T)
+                # plt.plot([150, 150+la_vector[0]*50], [150, 150+la_vector[1]*50])
+                # plt.plot([150, 150+sep_vector[0]*50], [150, 150+sep_vector[1]*50])
+                # plt.plot([150, 150+vector[0]*50], [150, 150+vector[1]*50])
+                # plt.plot(LVendoCS[:,0], LVendoCS[:,1], 'o')
+                # plt.plot(LVepiCS[:,0], LVepiCS[:,1], 'o')
+                # plt.plot(RVFW_CS[:,0], RVFW_CS[:,1], 'o-')
+                # plt.plot(mv_centroid[0], mv_centroid[1], 'ro')
+                # plt.plot(lv_apex[0], lv_apex[1], 'rx')
+                # plt.plot(rv_apex[0], rv_apex[1], 'rx')
 
-            if self.has_rv:
-                # Delete RV free wall contours at the base
-                if np.any(delete_points[2,self.slice_number] >= 0):
-                    delete = delete_points[2, self.slice_number]
-                    delete = delete[delete >= 0]
-                    RVFW_CS = ut.deleteHelper(RVFW_CS, delete, axis = 0)
-                else:
-                    _, ax = plt.subplots(1,1)
-                    if not is_2chr:
-                        ax.scatter(LVendoCS[:, 0], LVendoCS[:, 1], s=10, c='C0')
-                        if len(LVepiCS) > 0:
-                            ax.scatter(LVepiCS[:, 0], LVepiCS[:, 1], s=10, c='C1')
+            # if os.path.exists(os.path.join(os.path.dirname(self.cmr.fname), self.cmr.view + '_delete_points.npz')):
+            #     print('Loading saved points to delete in contours. If you want to redo the selection, delete the file ' + self.cmr.view + '_delete_points.npz.')
+            #     delete_points = np.load(os.path.join(os.path.dirname(self.cmr.fname), self.cmr.view + '_delete_points.npz'))
+            #     delete_points = np.stack([delete_points['lvendo'], delete_points['lvepi'], delete_points['rvfw']])
+            # else:
+            #     delete_points = -np.ones([3, self.cmr.data.shape[2], 200], dtype=int)
+            # if not is_2chr:
+            #     [_, ia, ib] = ut.sharedRows(LVendoCS, LVepiCS)
+            #     LVendoCS = ut.deleteHelper(LVendoCS, ia, axis = 0)
+            #     LVepiCS = ut.deleteHelper(LVepiCS, ib, axis = 0)
 
-                        if len(RVseptCS) > 0:
-                            ax.scatter(RVseptCS[:, 0], RVseptCS[:, 1], s=10, c='C2')
-                    pts = ax.scatter(RVFW_CS[:, 0], RVFW_CS[:, 1], s=10, c='C3')
-                    selector = SelectFromCollection(ax, pts, 'RV free wall')
-                    plt.show()
-                    while selector.run:
-                        plt.pause(.5)
-                        pass
-                    RVFW_CS = ut.deleteHelper(RVFW_CS, selector.ind, axis = 0)
-                    delete_points[2, self.slice_number, :len(selector.ind)] = selector.ind
+            #     # Delete LV epi contours at the base
+            #     if len(LVepiCS) > 0:
+            #         if np.any(delete_points[1, self.slice_number] >= 0):
+            #             delete = delete_points[1, self.slice_number]
+            #             delete = delete[delete >= 0]
+            #             LVepiCS = ut.deleteHelper(LVepiCS, delete, axis = 0)
+            #         else:
+            #             _, ax = plt.subplots(1,1)
+            #             ax.scatter(LVendoCS[:, 0], LVendoCS[:, 1], s=10, c='C0')
+            #             pts = ax.scatter(LVepiCS[:, 0], LVepiCS[:, 1], s=10, c='C1')
+            #             if self.has_rv:
+            #                 ax.scatter(RVseptCS[:, 0], RVseptCS[:, 1], s=10, c='C2')
+            #                 ax.scatter(RVFW_CS[:, 0], RVFW_CS[:, 1], s=10, c='C3')
+            #             selector = SelectFromCollection(ax, pts, 'LV epi')
+            #             plt.show()
+            #             while selector.run:
+            #                 plt.pause(.5)
+            #                 pass
 
-            cmr_folder = os.path.dirname(self.cmr.fname)
-            np.savez(os.path.join(cmr_folder, self.cmr.view + '_delete_points.npz'), lvendo=delete_points[0],
-                     lvepi=delete_points[1], rvfw=delete_points[2])
+            #             LVepiCS = ut.deleteHelper(LVepiCS, selector.ind, axis = 0)
+            #             delete_points[1, self.slice_number, :len(selector.ind)] = selector.ind
+
+
+            #     # Delete LV epi contours at the base
+            #     if len(LVendoCS) > 0:
+            #         if np.any(delete_points[0,self.slice_number] >= 0):
+            #             delete = delete_points[0, self.slice_number]
+            #             delete = delete[delete >= 0]
+            #             LVendoCS = ut.deleteHelper(LVendoCS, delete, axis = 0)
+            #         else:
+            #             delete = np.zeros(200)
+            #             _, ax = plt.subplots(1,1)
+            #             pts = ax.scatter(LVendoCS[:, 0], LVendoCS[:, 1], s=10, c='C0')
+            #             try:
+            #                 ax.scatter(LVepiCS[:, 0], LVepiCS[:, 1], s=10, c='C1')
+            #             except:
+            #                 pass
+            #             if self.has_rv:
+            #                 try:
+            #                     ax.scatter(RVseptCS[:, 0], RVseptCS[:, 1], s=10, c='C2')
+            #                 except:
+            #                     pass
+            #                 ax.scatter(RVFW_CS[:, 0], RVFW_CS[:, 1], s=10, c='C3')
+            #             selector = SelectFromCollection(ax, pts, 'LV endo')
+            #             plt.show()
+            #             while selector.run:
+            #                 plt.pause(.5)
+            #                 pass
+            #             LVendoCS = ut.deleteHelper(LVendoCS, selector.ind, axis = 0)
+            #             delete_points[0, self.slice_number, :len(selector.ind)] = selector.ind
+
+            # if self.has_rv:
+            #     # Delete RV free wall contours at the base
+            #     if np.any(delete_points[2,self.slice_number] >= 0):
+            #         delete = delete_points[2, self.slice_number]
+            #         delete = delete[delete >= 0]
+            #         RVFW_CS = ut.deleteHelper(RVFW_CS, delete, axis = 0)
+            #     else:
+            #         _, ax = plt.subplots(1,1)
+            #         if not is_2chr:
+            #             ax.scatter(LVendoCS[:, 0], LVendoCS[:, 1], s=10, c='C0')
+            #             if len(LVepiCS) > 0:
+            #                 ax.scatter(LVepiCS[:, 0], LVepiCS[:, 1], s=10, c='C1')
+
+            #             if len(RVseptCS) > 0:
+            #                 ax.scatter(RVseptCS[:, 0], RVseptCS[:, 1], s=10, c='C2')
+            #         pts = ax.scatter(RVFW_CS[:, 0], RVFW_CS[:, 1], s=10, c='C3')
+            #         selector = SelectFromCollection(ax, pts, 'RV free wall')
+            #         plt.show()
+            #         while selector.run:
+            #             plt.pause(.5)
+            #             pass
+            #         RVFW_CS = ut.deleteHelper(RVFW_CS, selector.ind, axis = 0)
+            #         delete_points[2, self.slice_number, :len(selector.ind)] = selector.ind
+
+            # cmr_folder = os.path.dirname(self.cmr.fname)
+            # np.savez(os.path.join(cmr_folder, self.cmr.view + '_delete_points.npz'), lvendo=delete_points[0],
+            #          lvepi=delete_points[1], rvfw=delete_points[2])
 
         if not LVendoIsEmpty:
             self.lvendo_ijk = np.hstack([LVendoCS, np.full((len(LVendoCS),1), self.slice_number)]).astype(float)
@@ -625,6 +678,152 @@ def getContoursFromMask(maskSlice, irregMaxSize):
     return np.vstack(lst) if not len(lst) == 0 else np.array([])
 
 
+def find_base_nodes(contour, la_vector, sep_vector, weights=None):
+    # Get the convex hull
+    CH = ConvexHull(contour)
+    hull_points = contour[CH.vertices]
+
+    # Close the hull
+    hull_points = np.append(hull_points, hull_points[0][None], axis=0)
+    hull_lines = np.vstack([np.arange(0,len(hull_points)-1), np.arange(1,len(hull_points))]).T
+
+    # Find normal vectors
+    hull_vectors = hull_points[hull_lines[:,1]] - hull_points[hull_lines[:,0]]
+    hull_lengths = np.linalg.norm(hull_vectors, axis=1)
+    hull_vectors = hull_vectors / hull_lengths[:,None]
+    hull_normals = np.array([hull_vectors[:,1], -hull_vectors[:,0]]).T
+
+    # Compute the angle respect to the LA vector
+    vector = la_vector
+    while True:
+        hull_angle = np.abs(np.dot(hull_normals, vector))
+        if weights is not None:
+            hull_angle *= weights[CH.vertices]
+        perpendicular_lines = np.where(hull_angle > 0.9)[0]
+        perpendicular_nodes = np.unique(hull_lines[perpendicular_lines])
+
+        # Find the longest line
+        lims = np.where(np.diff(perpendicular_nodes)>1)[0]
+        if len(lims) == 0:
+            base_nodes = np.array([perpendicular_nodes[0], perpendicular_nodes[-1]])
+        else:
+            sets = [np.arange(0,lims[0]+1)]
+            for i in range(len(lims)):
+                if i == len(lims)-1:
+                    sets.append(np.arange(lims[i]+1, len(perpendicular_nodes)))
+                else:
+                    sets.append(np.arange(lims[i]+1, lims[i+1]+1))
+
+            length = np.zeros(len(sets))
+            for i, point_set in enumerate(sets):
+                nodes = hull_points[perpendicular_nodes[point_set[np.array([-1,0])]]]
+                length[i] = np.linalg.norm(nodes[1] - nodes[0])
+
+            base_nodes = perpendicular_nodes[sets[np.argmax(length)][np.array([-1,0])]]
+        
+        length = np.linalg.norm(hull_points[base_nodes[1]] - hull_points[base_nodes[0]])
+        print(length)
+        if length < 20:
+            if sep_vector is None:
+                break
+            else:
+                vector += sep_vector*0.1
+                vector = vector/np.linalg.norm(vector)
+        else:
+            break
+
+
+    base_points = hull_points[base_nodes]
+
+    # Find closest point to base points
+    distances = np.linalg.norm(contour - base_points[0], axis=1)
+    closest_node1 = np.argmin(distances)
+    distances = np.linalg.norm(contour - base_points[1], axis=1)
+    closest_node2 = np.argmin(distances)
+
+    if closest_node2 < closest_node1:
+        closest_node1, closest_node2 = closest_node2, closest_node1
+    set1 = np.arange(0, closest_node1)
+    set2 = np.arange(closest_node1, closest_node2)
+    set3 = np.arange(closest_node2, len(contour))
+
+    len1 = len(set1) + len(set3)
+    len2 = len(set2)
+
+    if len2 < len1:
+        delnodes = set2
+    else:
+        delnodes = np.concatenate([set1, set3])
+
+    hull_midpoints = np.mean(hull_points[hull_lines], axis=1)
+    # plt.figure(1, clear=True)
+    # plt.plot(contour[:,0], contour[:,1])
+    # plt.plot(hull_points[:,0], hull_points[:,1], 'o-')
+    # plt.plot(hull_points[perpendicular_nodes,0], hull_points[perpendicular_nodes,1])
+    # plt.plot([130, 130-la_vector[0]*20],[130, 130-la_vector[1]*20])
+    # plt.plot(contour[delnodes,0], contour[delnodes,1], 'o')
+    # plt.quiver(hull_midpoints[:,0], hull_midpoints[:,1], hull_vectors[:,0], hull_vectors[:,1])
+    # plt.gca().set_aspect('equal')
+    return delnodes
+
+
+def remove_base_nodes(contours, apex=None, mv_centroid=None, min_length=15):
+    # Grab la contours
+    la_contours = [ctr for ctr in contours if ('la' in ctr.view) and ('endo' in ctr.ctype or 'epi' in ctr.ctype) and ('lv' in ctr.ctype or 'rv' in ctr.ctype)]
+    sa_contours = [ctr for ctr in contours if ('sa' in ctr.view) and ('endo' in ctr.ctype or 'epi' in ctr.ctype) and ('lv' in ctr.ctype or 'rv' in ctr.ctype)]
+    if apex is None:
+        try:
+            apex = [ctr.points for ctr in contours if ctr.ctype == 'apexepi'][0]
+        except:
+            apex = [ctr.points for ctr in contours if ctr.ctype == 'apexendo'][0]
+    else:
+        apex = apex
+    if mv_centroid is None:
+        mv_points = np.vstack([ctr.points for ctr in contours if ctr.ctype == 'mv'])
+        mv_centroid = np.mean(mv_points, axis=0)
+    else:
+        mv_centroid = mv_centroid
+        
+    sa_vector = sa_contours[0].normal
+
+    la_length = np.dot(mv_centroid - apex, sa_vector)
+    if la_length < 0:
+        sa_vector = -sa_vector
+        la_length = -la_length
+
+    # Compute long axis distance for la contours
+    for ctr in la_contours:
+        points = ctr.points
+        z_coord = np.dot(points - apex, sa_vector)/la_length
+
+        len_base_nodes = 0
+        long_cut = 0.85
+        while len_base_nodes < min_length:
+            base_nodes = np.where(z_coord > long_cut)[0]
+            len_base_nodes = len(base_nodes)
+            long_cut -= 0.05
+
+        vector = np.diff(points[base_nodes], axis=0)
+        vector = vector / np.linalg.norm(vector, axis=1)[:, None]
+
+        node_vector = np.zeros([len(base_nodes), 3])
+        for i in range(len(base_nodes)):
+            if i == 0:
+                node_vector[i] = vector[0]
+            elif i == len(base_nodes) - 1:
+                node_vector[i] = vector[-1]
+            else:
+                node_vector[i] = (vector[i-1]+vector[i])/2
+
+        node_vector = node_vector / np.linalg.norm(node_vector, axis=1)[:, None]
+
+        angle = np.arccos(np.abs(np.dot(node_vector, sa_vector)))
+        ind = np.where(angle > np.pi/3)[0][np.array([0,-1])]
+        base_nodes = base_nodes[np.arange(ind[0], ind[1])]
+
+        ctr.points = np.delete(ctr.points, base_nodes, axis=0)
+
+
 def cleanContours(contours, downsample):
     ''' Helper function that returns an m1 x 2 ndarray, for some m1, that is the result of cleaning up "contours".
     "contours" is an m2 x 2 ndarray for some m1.
@@ -861,6 +1060,53 @@ def add_apex(contours, cmrs, adjust_weights=False):
 
     ctr = CMRContour(apex, 'apexepi', 0, 'la')
     contours += [ctr]
+
+
+def find_apex_mv_estimate(contours):
+    sa_contours = []
+    la_contours = []
+    for ctr in contours:
+        if 'lvendo' in ctr.ctype:
+            if 'la' in ctr.view:
+                la_contours.append(ctr)
+            else:
+                sa_contours.append(ctr)
+
+    sa_areas = np.zeros(len(sa_contours))
+    for i, ctr in enumerate(sa_contours):
+        sa_areas[i] = ut.calculate_area_of_polygon_3d(ctr.points, normal=ctr.normal)
+
+    # Need to find if the slices are ordered from apex to base or base to apex
+    if sa_areas[0] < sa_areas[-1]:
+        apex_slice = 0
+        mv_slice = len(sa_areas) - 1
+    else:
+        apex_slice = len(sa_areas) - 1
+        mv_slice = 0
+
+    apex = np.mean(sa_contours[apex_slice].points, axis=0)
+    mv = np.mean(sa_contours[mv_slice].points, axis=0)
+
+    la_vector = mv - apex
+    la_vector = la_vector/np.linalg.norm(la_vector)
+
+    sa_vector = sa_contours[0].normal
+    if np.dot(sa_vector, la_vector) < 0:
+        sa_vector = -sa_vector
+
+    # Calculate z coord for each la contour
+    mv_points = np.zeros([len(la_contours),3])
+    apex_points = np.zeros([len(la_contours),3])
+    for i, ctr in enumerate(la_contours):
+        points = ctr.points
+        z_coord = np.dot(points - apex, sa_vector)
+        mv_points[i] = points[np.argmax(z_coord)]
+        apex_points[i] = points[np.argmin(z_coord)]
+
+    apex = np.mean(apex_points, axis=0)
+    mv = np.mean(mv_points, axis=0)
+
+    return apex, mv
 
 
 def add_rv_apex(contours, cmrs):

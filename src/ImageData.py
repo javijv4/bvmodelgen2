@@ -10,14 +10,14 @@ import numpy as np
 import nibabel as nib
 import meshio as io
 
-from niftiutils import readFromNIFTI
-from masksutils import check_seg_valid
-from plot_functions import plot_seg_files
-
 from masks2contours.m2c import CMRImage, correct_labels
 from masks2contours import m2c, utils
 from masks2contours import slicealign
 from bvfitting import BiventricularModel, GPDataSet, ContourType
+
+from niftiutils import readFromNIFTI
+from masksutils import check_seg_valid
+from plot_functions import plot_seg_files
 
 import plot_functions as pf
 from plotly.offline import  plot
@@ -25,11 +25,11 @@ import plotly.graph_objs as go
 
 class ImageData:
 
-    template_fitting_weights = {'apex_endo': 3, 'apex_epi': 3, 'mv': 0.5, 'tv': 1, 'av': 1, 'pv': 1,
-                                'mv_phantom': 1.5, 'tv_phantom': 1, 'av_phantom': 1, 'pv_phantom': 1,
+    template_fitting_weights = {'apex_endo': 2, 'apex_epi': 2, 'mv': 0.5, 'tv': 1, 'av': 1, 'pv': 1,
+                                'mv_phantom': 1.5, 'tv_phantom': 1., 'av_phantom': 1., 'pv_phantom': 1,
                                 'rv_insert': 1.5,
-                                'la_rv_endo': 1, 'la_rv_epi': 1, 'la_lv_endo': 1, 'la_lv_epi': 1,
-                                'sa_lv_epi': 2, 'sa_lv_endo': 2, 'sa_rv_endo': 1, 'sa_rv_epi': 1}
+                                'la_rv_endo': 3, 'la_rv_epi': 2, 'la_lv_endo': 2, 'la_lv_epi': 1,
+                                'sa_lv_epi': 1, 'sa_lv_endo': 2, 'sa_rv_endo': 1, 'sa_rv_epi': 1}
 
     def __init__(self, seg_paths, sa_labels, la_labels, frame, output_fldr, autoclean=False):
         self.seg_paths = seg_paths
@@ -151,7 +151,7 @@ class ImageData:
         self.slices = slices
 
 
-    def align_slices(self, translation_files_path=None, method=2, plot=False):
+    def align_slices(self, translation_files_path=None, method=2, show=False):
         if translation_files_path is None:
             # Compute alignment
             print('Calculating alignment using Sinclair algorithm...')
@@ -165,11 +165,25 @@ class ImageData:
         else:
             print('Loading translations from file...')
             translations = {}
+            found = 0
             for view in  ['sa', 'la_2ch', 'la_2chr', 'la_3ch', 'la_4ch']:
                 try:
                     translations[view] = np.load(translation_files_path + view.upper() + '_translation.npy')
+                    found += 1
                 except:
+                    print('Translation file for ' + view + ' not found.')
                     continue
+
+            if found == 0:
+                # Compute alignment
+                print('No translation file found, calculating alignment using Sinclair algorithm...')
+                slicealign.find_SA_initial_guess(self.slices)
+                if method == 2:
+                    slicealign.optimize_stack_translation2(self.slices, nit=100)
+                elif method == 3:
+                    slicealign.optimize_stack_translation3(self.slices, nit=100)
+                translations = slicealign.save_translations(self.output_fldr, self.cmrs, self.slices)
+
 
             slices = []
             for slc in self.slices:
@@ -182,12 +196,12 @@ class ImageData:
         self.translations = translations
 
         fig = pf.plot_slices(self.slices)
-        if plot:
+        if show:
             fig.show()
         pf.save_figure(self.output_fldr + 'tran_salign.html', fig)
 
 
-    def generate_contours(self, valve_file_paths={}, downsample=3, use_frames=None, plot=True):
+    def generate_contours(self, valve_file_paths={}, downsample=3, use_frames=None, show=True, min_length=15):
         print('Generating contours from slices...')
         contours = []
         for slc in self.slices:
@@ -211,15 +225,19 @@ class ImageData:
                     continue
                 print('Loading valves from ' + view.upper() + ' view')
             m2c.add_valves(contours, valves, self.cmrs, self.translations)
+            m2c.add_apex(contours, self.cmrs)
+            m2c.add_rv_apex(contours, self.cmrs)
+            m2c.remove_base_nodes(contours, min_length=min_length)
+
         else:
             if self.has_la:
                 print('Adding valves from LA views...')
+                apex, mv = m2c.find_apex_mv_estimate(contours)
+                m2c.remove_base_nodes(contours, apex, mv, min_length=min_length)
                 m2c.find_valves_from_la(contours)
+                m2c.add_apex(contours, self.cmrs)
+                m2c.add_rv_apex(contours, self.cmrs)
 
-        if self.has_la:
-            print('Adding apex...')
-            m2c.add_apex(contours, self.cmrs)
-            m2c.add_rv_apex(contours, self.cmrs)
 
         # Save results
         m2c.writeResults(self.output_fldr + 'contours.txt', contours)
@@ -228,14 +246,14 @@ class ImageData:
         # Visualize
         fig = pf.plot_contours(contours, background=True)
         pf.save_figure(self.output_fldr + 'contours.html', fig)
-        if plot:
+        if show:
             fig.show()
 
         self.vertex_contours = pf.contours2vertex(contours)
         io.write(self.output_fldr + 'contours.vtu', self.vertex_contours)
 
 
-    def template_fitting(self, load_control_points=None, weight_GP=1, low_smoothing_weight=10, transmural_weight=20, rv_thickness=3, mesh_subdivisions=2):
+    def template_fitting(self, load_control_points=None, weight_GP=1, low_smoothing_weight=10, transmural_weight=20, rv_thickness=3, mesh_subdivisions=2, show=True):
         # Filename containing guide points (from contours/masks)
         filename = os.path.join(self.output_fldr, 'contours.txt')
         dataset = GPDataSet(filename)
@@ -265,7 +283,7 @@ class ImageData:
         # We do not have any pulmonary points or aortic points in our dataset but if you do,
         # I recommend you to do the same.
         mitral_points = dataset.create_valve_phantom_points(30, ContourType.MITRAL_VALVE)
-        # tri_points = dataset.create_valve_phantom_points(10, ContourType.TRICUSPID_VALVE)
+        tri_points = dataset.create_valve_phantom_points(30, ContourType.TRICUSPID_VALVE)
         aorta_points = dataset.create_valve_phantom_points(10, ContourType.AORTA_VALVE)
         # pulmonary_points = data_set.create_valve_phantom_points(20, ContourType.PULMONARY_VALVE)
 
@@ -312,7 +330,7 @@ class ImageData:
         data = model + contourPlots
         fig = go.Figure(data)
         fig.update_scenes(xaxis_visible=False, yaxis_visible=False,zaxis_visible=False )
-        plot(fig,filename=os.path.join(self.output_fldr, 'step2_fitted.html'), auto_open=False)
+        plot(fig,filename=os.path.join(self.output_fldr, 'step2_fitted.html'), auto_open=show)
 
         # Save .stl and control points
         bvmesh, valve_mesh, septum_mesh = bvmodel.get_bv_surface_mesh(subdivisions=mesh_subdivisions)
@@ -337,37 +355,96 @@ def compute_volume_from_sa_cmr(cmr):
     pass
 
 
+from mpl_toolkits.mplot3d import Axes3D
 def compute_volume_from_contours(contours, which='lvendo', use_la_for_extrapolation=True, return_areas=False):
     # Grab contours
-    sa_midpoints = []
-    sa_areas = []
+    sa_contours = []
+    sa_septum = []
+    la_contours = []
     mv_points = []
+
     for ctr in contours:
         if ctr.view == 'sa' and ctr.ctype == which:
-            sa_points = ctr.points
-            sa_midpoint = np.mean(sa_points, axis=0)
-            sa_vector = ctr.normal
-            sa_area = utils.calculate_area_of_polygon_3d(sa_points, sa_vector)
-
-            # Save in list
-            sa_midpoints.append(sa_midpoint)
-            sa_areas.append(sa_area)
-
+            sa_contours.append(ctr)
+        elif ctr.view == 'sa' and ctr.ctype == 'rvsep':
+            sa_septum.append(ctr)
         elif 'la' in ctr.view and ctr.ctype == which:
-            la_points = ctr.points
-
+            la_contours.append(ctr)
         elif ctr.ctype == 'mv':
             mv_points.append(ctr.points)
-
-
         elif ctr.ctype == 'tv':
             mv_points.append(ctr.points)
-
         elif ctr.ctype == 'apexendo':
             apex_point = ctr.points
 
+    # If RV endo I need to merge the septum with the contours
+    if which == 'rvendo':
+        new_contours = []
+        for sa_ctr in sa_contours:
+            found_septum = False
+            for sep_ctr in sa_septum:
+                if sa_ctr.slice == sep_ctr.slice:
+                    insert_points = sep_ctr.points[np.array([0, -1])]
+
+                    # Find point in sa_ctr that is closest to the insert_points
+                    dist1 = np.linalg.norm(sa_ctr.points - insert_points[0], axis=1)
+                    dist2 = np.linalg.norm(sa_ctr.points - insert_points[1], axis=1)
+
+                    insert1 = np.argmin(dist1)
+                    insert2 = np.argmin(dist2)
+
+                    # Need to check wheter the septum points start in insert1 or insert2
+                    if np.linalg.norm(sep_ctr.points[0] - sa_ctr.points[insert1]) < np.linalg.norm(sep_ctr.points[0] - sa_ctr.points[insert2]):
+                        sep_points = sep_ctr.points[::-1]
+                    else:
+                        sep_points = sep_ctr.points
+
+
+                    sa_points = np.vstack([sa_ctr.points[:insert1], sep_points, sa_ctr.points[insert2+1:]])
+
+                    new_ctr = m2c.CMRContour(sa_points, 'rvendo', sa_ctr.slice, 'sa', sa_ctr.normal)
+                    new_contours.append(new_ctr)
+                    found_septum = True
+                    break
+            if found_septum == False:
+                new_contours.append(sa_ctr)
+        sa_contours = new_contours
+
+
+    # if which == 'rvendo':
+    #     import matplotlib.pyplot as plt
+    #     fig = plt.figure()
+    #     ax = fig.add_subplot(111, projection='3d')
+
+    #     for contour in sa_contours:
+    #         points = contour.points
+    #         ax.plot(points[:, 0], points[:, 1], points[:, 2], 'r')
+
+    #     ax.set_xlabel('X')
+    #     ax.set_ylabel('Y')
+    #     ax.set_zlabel('Z')
+
+    #     plt.show()
+
+    # Calculate sa_area
+    sa_areas = []
+    sa_midpoints = []
+    for ctr in sa_contours:
+        sa_points = ctr.points
+        sa_vector = ctr.normal
+        sa_area = utils.calculate_area_of_polygon_3d(sa_points, sa_vector)
+
+        # Save in list
+        sa_areas.append(sa_area)
+        sa_midpoints.append(np.mean(sa_points, axis=0))
+
+
+    # Calculate valve centroid
     mv_points = np.vstack(mv_points)
     mv_centroid = np.mean(mv_points, axis=0)
+
+    # Grab la points
+    la_points = np.vstack([ctr.points for ctr in la_contours])
 
     # Check what SA slice is closer to the apex
     apex_distance = np.linalg.norm(sa_midpoints - apex_point, axis=1)

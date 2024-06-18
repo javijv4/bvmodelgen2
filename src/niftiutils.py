@@ -20,14 +20,14 @@ def readFromNIFTI(segName, frameNum):
         ext = '.nii'
     else:
         raise FileNotFoundError('File {} was not found'.format(segName))
-     
+
     img = nib.load(segName + ext)
     hdr = img.header
 
     # Get the segmentation from the NIFTI file.
     seg = img.get_fdata()
     if seg.ndim > 3:  # if segmentation includes all time points
-        seg = seg[:, :, :, frameNum].squeeze()
+        seg = seg[:, :, :, frameNum]
 
     # Get the 4x4 homogeneous affine matrix.
     transform = img.affine  # In the MATLAB script, we transposed the transform matrix at this step. We do not need to do this here due to how nibabel works.
