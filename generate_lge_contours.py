@@ -58,7 +58,6 @@ for view in  views:
         print('Translation file for ' + view + ' not found.')
         continue
 
-found=0
 if found != len(views):
     # If there is more than 1 LA view we can precompute a better initial guess.
     if len(seg_files) > 2:
