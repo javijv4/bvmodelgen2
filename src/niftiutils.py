@@ -31,7 +31,7 @@ def readFromNIFTI(segName, frameNum):
 
     # Get the 4x4 homogeneous affine matrix.
     transform = img.affine  # In the MATLAB script, we transposed the transform matrix at this step. We do not need to do this here due to how nibabel works.
-    transform[0:2, :] = -transform[0:2, :] # This edit has to do with RAS system in Nifti
+    # transform[0:2, :] = -transform[0:2, :] # This edit has to do with RAS system in Nifti
 
     # Initialize pixSpacing. In MATLAB, pix_spacing is info.PixelDimensions(1). After converting from 1-based
     # indexing to 0-based indexing, one might think that that means pixSpacing should be pixdim[0], but this is not the

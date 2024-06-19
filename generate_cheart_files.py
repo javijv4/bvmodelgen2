@@ -11,13 +11,13 @@ import numpy as np
 import meshio as io
 import cheartio as chio
 
-frame = 10
+frame = 0
 patient = 'ZS-11'
-simmodeler_path = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/{}/Images/frame{}/'.format(patient, frame)
-mesh_path = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/{}/es_mesh_ms25/'.format(patient)
+simmodeler_path = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/{}/Images/test_frame{}/'.format(patient, frame)
+mesh_path = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/{}/mesh/'.format(patient)
 model_name = 'bv_model'          # output name for CH files
-vol_mesh_name = simmodeler_path + 'volume_ms25'
-surf_mesh_name = simmodeler_path + 'surface_ms25'
+vol_mesh_name = simmodeler_path + 'volume'
+surf_mesh_name = simmodeler_path + 'surface'
 
 swap = True
 

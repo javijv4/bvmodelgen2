@@ -15,7 +15,7 @@ if len(sys.argv) > 1:
     patient = sys.argv[1]
 else:
     patient = 'ZS-11'
-mesh_folder = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/{}/es_mesh_ms25/'.format(patient)
+mesh_folder = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/{}/mesh/'.format(patient)
 
 region_split_file = mesh_folder + 'region.FE'
 mesh_path = mesh_folder + 'bv_model'
