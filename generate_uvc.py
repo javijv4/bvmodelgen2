@@ -16,6 +16,7 @@ if len(sys.argv) > 1:
 else:
     patient = 'ZS-11'
 mesh_folder = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/{}/mesh/'.format(patient)
+mesh_folder = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/VirtualPatient/dsp-virtual-patient/mesh/'
 
 region_split_file = mesh_folder + 'region.FE'
 mesh_path = mesh_folder + 'bv_model'
@@ -69,7 +70,14 @@ if mcg.mmg:
     long = mcg.correct_longitudinal(uvc)
 
 print('Postprocessing ')
-uvc.merge_lv_rv_point_data(['circ', 'trans', 'circ_aux', 'long'])
+
+print('Computing AHA segments')
+uvc.compute_aha_segments(aha_type='points')
+uvc.compute_aha_segments(aha_type='elems')
+
+# Collecting results into BV mesh
+uvc.merge_lv_rv_point_data(['circ', 'trans', 'circ_aux', 'long', 'aha'])
+uvc.merge_lv_rv_cell_data(['aha'])
 
 import meshio as io
 io.write(mesh_folder + 'lv_mesh.vtu', uvc.lv_mesh)

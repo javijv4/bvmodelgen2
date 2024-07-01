@@ -16,7 +16,7 @@ from mapfibrosis.mapper import map_fibrosis
 if len(sys.argv) > 1:
     patient = sys.argv[1]
 else:
-    patient = 'VB-1'
+    patient = 'KL-5'
 lge_fldr = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/' + patient + '/LGE/'
 mesh_fldr = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/' + patient + '/mesh/'
 output_fldr = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/' + patient + '/data/'
@@ -29,6 +29,7 @@ img_info = np.load(lge_fldr + 'lge_info.npy', allow_pickle=True).item()
 
 fib_func = img_info['fib_func']
 bv_fibrosis, long = map_fibrosis(fib_func, mesh, mesh_info)
+bv_fibrosis = (bv_fibrosis > 0.5).astype(int)
 
 # Save results
 chio.write_dfile(output_fldr + 'fibrosis.FE', bv_fibrosis)

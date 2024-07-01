@@ -293,7 +293,7 @@ class UVCGen:
 
         long = run_coord(self.rv_mmg_mesh, self.rv_mmg_bdata, bcs_marker)
         self.rv_mmg_mesh.point_data['long'] = long
-        io.write('mmg_mesh.vtu', self.rv_mmg_mesh)
+        # io.write('mmg_mesh.vtu', self.rv_mmg_mesh)
 
         # plt.figure(1,clear=True)
         # plt.plot(long[zero_nodes], self.rv_mmg_mesh.point_data['long_plane'][zero_nodes], '.')

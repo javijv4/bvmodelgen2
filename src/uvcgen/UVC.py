@@ -310,17 +310,23 @@ class generalUVC:
     def compute_aha_segments(self, aha_type = 'points'):
         long = self.lv_mesh.point_data['long_plane']
         xyz = self.lv_mesh.points
+
+        # Find lv endo apex
+        lv_endo_nodes = np.unique(self.lv_bdata[self.lv_bdata[:,-1]==self.patches['lv_endo'],1:-1])
+        dist = self.long_axis_vector@(xyz[lv_endo_nodes] - self.valve_centroids['mv']).T
+        self.lv_endo_apex_node = lv_endo_nodes[np.argmax(np.abs(dist))]
+
+        # Rescale long to be 0 at lv_endo_apex_node
+        av_node = np.where(long==1)[0][0]
+        long = long - long[self.lv_endo_apex_node]
+        long = long/long[av_node]
+
         if aha_type == 'points':
             xyz_aha = self.lv_mesh.points
         elif aha_type == 'elems':
             ien = self.lv_mesh.cells[0].data
             xyz_aha = np.mean(xyz[ien], axis=1)
             long = np.mean(long[ien], axis=1)
-
-        # Find lv endo apex
-        lv_endo_nodes = np.unique(self.lv_bdata[self.lv_bdata[:,-1]==self.patches['lv_endo'],1:-1])
-        dist = self.long_axis_vector@(xyz[lv_endo_nodes] - self.valve_centroids['mv']).T
-        self.lv_endo_apex_node = lv_endo_nodes[np.argmin(np.abs(dist))]
 
         # Project coordinates to local cardinal system
         Q = np.array([self.septum_vector, self.third_vector, self.long_axis_vector]).T
@@ -347,24 +353,24 @@ class generalUVC:
 
         # Define AHA
         aha_region = np.zeros(len(xyz_aha))
-        aha_region[(base_marker)*(base_circ>60)*(base_circ<=120)] = 1
-        aha_region[(base_marker)*(base_circ>120)*(base_circ<=180)] = 2
-        aha_region[(base_marker)*(base_circ>=-180)*(base_circ<=-120)] = 3
-        aha_region[(base_marker)*(base_circ>-120)*(base_circ<=-60)] = 4
-        aha_region[(base_marker)*(base_circ>-60)*(base_circ<=0)] = 5
-        aha_region[(base_marker)*(base_circ>=0)*(base_circ<=60)] = 6
+        aha_region[(base_marker)*(base_circ>60)*(base_circ<=120)] = 4
+        aha_region[(base_marker)*(base_circ>120)*(base_circ<=180)] = 5
+        aha_region[(base_marker)*(base_circ>=-180)*(base_circ<=-120)] = 6
+        aha_region[(base_marker)*(base_circ>-120)*(base_circ<=-60)] = 1
+        aha_region[(base_marker)*(base_circ>-60)*(base_circ<=0)] = 2
+        aha_region[(base_marker)*(base_circ>=0)*(base_circ<=60)] = 3
 
-        aha_region[(mid_marker)*(mid_circ>60)*(mid_circ<=120)] = 7
-        aha_region[(mid_marker)*(mid_circ>120)*(mid_circ<=180)] = 8
-        aha_region[(mid_marker)*(mid_circ>=-180)*(mid_circ<=-120)] = 9
-        aha_region[(mid_marker)*(mid_circ>-120)*(mid_circ<=-60)] = 10
-        aha_region[(mid_marker)*(mid_circ>-60)*(mid_circ<=0)] = 11
-        aha_region[(mid_marker)*(mid_circ>=0)*(mid_circ<=60)] = 12
+        aha_region[(mid_marker)*(mid_circ>60)*(mid_circ<=120)] = 10
+        aha_region[(mid_marker)*(mid_circ>120)*(mid_circ<=180)] = 11
+        aha_region[(mid_marker)*(mid_circ>=-180)*(mid_circ<=-120)] = 12
+        aha_region[(mid_marker)*(mid_circ>-120)*(mid_circ<=-60)] = 7
+        aha_region[(mid_marker)*(mid_circ>-60)*(mid_circ<=0)] = 8
+        aha_region[(mid_marker)*(mid_circ>=0)*(mid_circ<=60)] = 9
 
-        aha_region[(apex_marker)*(apex_circ>45)*(apex_circ<=135)] = 13
-        aha_region[(apex_marker)*((apex_circ>135)+(apex_circ<=-135))] = 14
-        aha_region[(apex_marker)*(apex_circ>-135)*(apex_circ<=-45)] = 15
-        aha_region[(apex_marker)*(apex_circ>-45)*(apex_circ<=45)] = 16
+        aha_region[(apex_marker)*(apex_circ>45)*(apex_circ<=135)] = 15
+        aha_region[(apex_marker)*((apex_circ>135)+(apex_circ<=-135))] = 16
+        aha_region[(apex_marker)*(apex_circ>-135)*(apex_circ<=-45)] = 13
+        aha_region[(apex_marker)*(apex_circ>-45)*(apex_circ<=45)] = 14
 
         aha_region[apex_apex_marker] = 17
 
@@ -1496,30 +1502,30 @@ def compute_aha_segments(mesh, bdata, patches, coord_system, aha_type = 'points'
     mid_xyz = proj_xyz - mid_centroid
     apex_xyz = proj_xyz - apex_centroid
 
-    base_circ = np.rad2deg(np.arctan2(base_xyz[:,1], base_xyz[:,0]))
-    mid_circ = np.rad2deg(np.arctan2(mid_xyz[:,1], mid_xyz[:,0]))
-    apex_circ = np.rad2deg(np.arctan2(apex_xyz[:,1], apex_xyz[:,0]))
+    base_circ = -np.rad2deg(np.arctan2(base_xyz[:,1], base_xyz[:,0]))
+    mid_circ = -np.rad2deg(np.arctan2(mid_xyz[:,1], mid_xyz[:,0]))
+    apex_circ = -np.rad2deg(np.arctan2(apex_xyz[:,1], apex_xyz[:,0]))
 
     # Define AHA
     aha_region = np.zeros(len(xyz_aha))
-    aha_region[(base_marker)*(base_circ>60)*(base_circ<=120)] = 1
-    aha_region[(base_marker)*(base_circ>120)*(base_circ<=180)] = 2
-    aha_region[(base_marker)*(base_circ>=-180)*(base_circ<=-120)] = 3
-    aha_region[(base_marker)*(base_circ>-120)*(base_circ<=-60)] = 4
-    aha_region[(base_marker)*(base_circ>-60)*(base_circ<=0)] = 5
-    aha_region[(base_marker)*(base_circ>=0)*(base_circ<=60)] = 6
+    aha_region[(base_marker)*(base_circ>60)*(base_circ<=120)] = 4
+    aha_region[(base_marker)*(base_circ>120)*(base_circ<=180)] = 5
+    aha_region[(base_marker)*(base_circ>=-180)*(base_circ<=-120)] = 6
+    aha_region[(base_marker)*(base_circ>-120)*(base_circ<=-60)] = 1
+    aha_region[(base_marker)*(base_circ>-60)*(base_circ<=0)] = 2
+    aha_region[(base_marker)*(base_circ>=0)*(base_circ<=60)] = 3
 
-    aha_region[(mid_marker)*(mid_circ>60)*(mid_circ<=120)] = 7
-    aha_region[(mid_marker)*(mid_circ>120)*(mid_circ<=180)] = 8
-    aha_region[(mid_marker)*(mid_circ>=-180)*(mid_circ<=-120)] = 9
-    aha_region[(mid_marker)*(mid_circ>-120)*(mid_circ<=-60)] = 10
-    aha_region[(mid_marker)*(mid_circ>-60)*(mid_circ<=0)] = 11
-    aha_region[(mid_marker)*(mid_circ>=0)*(mid_circ<=60)] = 12
+    aha_region[(mid_marker)*(mid_circ>60)*(mid_circ<=120)] = 10
+    aha_region[(mid_marker)*(mid_circ>120)*(mid_circ<=180)] = 11
+    aha_region[(mid_marker)*(mid_circ>=-180)*(mid_circ<=-120)] = 12
+    aha_region[(mid_marker)*(mid_circ>-120)*(mid_circ<=-60)] = 7
+    aha_region[(mid_marker)*(mid_circ>-60)*(mid_circ<=0)] = 8
+    aha_region[(mid_marker)*(mid_circ>=0)*(mid_circ<=60)] = 9
 
-    aha_region[(apex_marker)*(apex_circ>45)*(apex_circ<=135)] = 13
-    aha_region[(apex_marker)*((apex_circ>135)+(apex_circ<=-135))] = 14
-    aha_region[(apex_marker)*(apex_circ>-135)*(apex_circ<=-45)] = 15
-    aha_region[(apex_marker)*(apex_circ>-45)*(apex_circ<=45)] = 16
+    aha_region[(apex_marker)*(apex_circ>45)*(apex_circ<=135)] = 15
+    aha_region[(apex_marker)*((apex_circ>135)+(apex_circ<=-135))] = 16
+    aha_region[(apex_marker)*(apex_circ>-135)*(apex_circ<=-45)] = 13
+    aha_region[(apex_marker)*(apex_circ>-45)*(apex_circ<=45)] = 14
 
     aha_region[apex_apex_marker] = 17
 

@@ -31,7 +31,7 @@ volume_files = (imgs_fldr + 'lv_volume.txt', imgs_fldr + 'rv_volume.txt')
 lv_ed_pressure = 8.0/7.50062   # kPa
 lv_es_pressure = 130.0/7.50062 # kPa
 rv_ed_pressure = 4.0/7.50062   # kPa
-rv_es_pressure = 30.0/7.50062 # kPa
+rv_es_pressure = 30.0/7.50062  # kPa
 
 # Load data
 pdata = PatientData(imgs_fldr + 'SA.nii', {'la_4ch': imgs_fldr + 'LA_4CH.nii'}, volume_files,

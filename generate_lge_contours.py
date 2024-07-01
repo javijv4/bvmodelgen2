@@ -16,7 +16,7 @@ import numpy as np
 if len(sys.argv) > 1:
     patient = sys.argv[1]
 else:
-    patient = 'VB-1'
+    patient = 'TS-9'
 fldr = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/' + patient + '/LGE/'
 
 seg_files = {'sa': fldr + 'SA_seg',
@@ -58,11 +58,12 @@ for view in  views:
         print('Translation file for ' + view + ' not found.')
         continue
 
+found=0
 if found != len(views):
     # If there is more than 1 LA view we can precompute a better initial guess.
     if len(seg_files) > 2:
         slicealign.find_SA_initial_guess(slices)
-    slicealign.optimize_stack_translation3(slices, nit=100)
+    slicealign.optimize_stack_translation2(slices, nit=100)
     translations = slicealign.save_translations(fldr, cmrs, slices)
 
 # Generate contours. Because for aligning the septum is not defined, we need to redo

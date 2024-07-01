@@ -20,7 +20,7 @@ mesh_folder = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmopla
 
 endo_patch = 1
 
-long_lims = [0.2,0.9]
+long_lims = [0.0,0.9]
 
 bv_mesh = chio.read_mesh(mesh_folder + 'bv_model', meshio=True)
 bv_bdata = chio.read_bfile(mesh_folder + 'bv_model')
@@ -66,6 +66,11 @@ _, corr = tree.query(xyz[endo_nodes])
 surf_mesh = io.Mesh(bv_mesh.points, {'triangle': bv_endo_faces})
 surf_mesh.point_data['thickness'] = np.zeros(len(bv_mesh.points))
 surf_mesh.point_data['thickness'][corr] = thickness
+surf_mesh.point_data['circ'] = np.zeros(len(bv_mesh.points))
+surf_mesh.point_data['circ'][corr] = endo_cl[:,0]
+surf_mesh.point_data['long'] = np.zeros(len(bv_mesh.points))
+surf_mesh.point_data['long'][corr] = endo_cl[:,1]
+
 
 io.write(mesh_folder + 'wall_thickness.vtu', surf_mesh)
 

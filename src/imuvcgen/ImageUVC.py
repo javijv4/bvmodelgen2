@@ -626,11 +626,22 @@ class UVC:
 
         lv_fib = np.append(F, np.zeros(8))
 
-        self.fib_func = LinearNDInterpolator(lv_ctl, lv_fib, fill_value=0.0)
+        # Extend circumferential
+        lv_ctl_plus = lv_ctl.copy()
+        lv_ctl_plus[:,0] += 2*np.pi
 
-        # fig = pf.show_point_cloud(lv_ctl, size = 3, color=lv_fib, cmap='Picnic',
-        #                           cmin=0, cmax=1, label='sa')
-        # fig.show()
+        lv_ctl_minus = lv_ctl.copy()
+        lv_ctl_minus[:,0] -= 2*np.pi
+
+        lv_ctl = np.vstack([lv_ctl, lv_ctl_plus, lv_ctl_minus])
+        lv_fib = np.concatenate([lv_fib, lv_fib, lv_fib])
+
+        # Restrict to -3pi/2, 3pi/2
+        mask = (lv_ctl[:,0]>-np.pi*3/2)*(lv_ctl[:,0]<np.pi*3/2)
+        lv_ctl = lv_ctl[mask]
+        lv_fib = lv_fib[mask]
+
+        self.fib_func = LinearNDInterpolator(lv_ctl, lv_fib, fill_value=0.0)
 
 
     def plot_ctl_in_xyz(self, plotly=True):

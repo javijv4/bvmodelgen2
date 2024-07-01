@@ -16,7 +16,7 @@ from masks2contours import slicealign, m2c
 if len(sys.argv) > 1:
     patient = sys.argv[1]
 else:
-    patient = 'TS-9'
+    patient = 'KL-5'
 lge_path = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/' + patient + '/LGE/'
 mesh_path = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/' + patient + '/mesh/'
 
