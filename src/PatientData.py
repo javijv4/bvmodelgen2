@@ -380,7 +380,7 @@ class PatientData:
         if rv_valve_times is None:
             rv_valve_times = self.rv_valve_times
 
-        fig, axs = plt.subplots(2, 1, clear=True, figsize=(5,8), num=1, sharex=True)
+        fig, axs = plt.subplots(2, 1, clear=True, figsize=(4,8), num=1, sharex=True)
         axs[0].plot(self.time, lv_pres_func(self.time)*7.50062, 'k', label='LV')
         axs[0].plot(self.time, rv_pres_func(self.time)*7.50062, 'k--', label='RV')
         axs[1].plot(self.time, lv_vol_func(self.time)/1000, 'k')
@@ -406,7 +406,8 @@ class PatientData:
                 axs[0].plot(rv_valve_time, rv_valve_pressure*7.50062, 'ro')
                 axs[1].plot(rv_valve_time, rv_valve_volume/1000, 'ro')
 
-        axs[0].legend()
+        axs[0].plot([],[],'ro', label='Valve events')
+        axs[0].legend(frameon=False)
         axs[0].set_ylim([-5, 135])
 
 

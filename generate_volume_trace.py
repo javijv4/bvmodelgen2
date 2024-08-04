@@ -126,3 +126,4 @@ print('LV ejection fraction = %2.6f' % ((np.max(lv_volume) - np.min(lv_volume))/
 
 
 #%%
+lv_ef = (np.max(lv_volume) - np.min(lv_volume))/np.max(lv_volume)

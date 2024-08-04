@@ -350,4 +350,7 @@ def calculate_area_of_polygon_3d(points, normal):
     # Compute the area of the polygon
     area = Polygon(polygon).area
 
+    def PolyArea(x,y):
+        return 0.5*np.abs(np.dot(x,np.roll(y,1))-np.dot(y,np.roll(x,1)))
+
     return area

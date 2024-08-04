@@ -355,7 +355,6 @@ def compute_volume_from_sa_cmr(cmr):
     pass
 
 
-from mpl_toolkits.mplot3d import Axes3D
 def compute_volume_from_contours(contours, which='lvendo', use_la_for_extrapolation=True, return_areas=False):
     # Grab contours
     sa_contours = []
@@ -370,12 +369,17 @@ def compute_volume_from_contours(contours, which='lvendo', use_la_for_extrapolat
             sa_septum.append(ctr)
         elif 'la' in ctr.view and ctr.ctype == which:
             la_contours.append(ctr)
-        elif ctr.ctype == 'mv':
-            mv_points.append(ctr.points)
-        elif ctr.ctype == 'tv':
-            mv_points.append(ctr.points)
         elif ctr.ctype == 'apexendo':
             apex_point = ctr.points
+        if (ctr.ctype == 'mv'):
+            mv_points.append(ctr.points)
+        elif (ctr.ctype == 'tv'):
+            mv_points.append(ctr.points)
+        # else:
+        #     if (ctr.ctype == 'tv') and  (which == 'lvendo'):
+        #         mv_points.append(ctr.points)
+        #     elif (ctr.ctype == 'mv') and  (which == 'rvendo'):
+        #         mv_points.append(ctr.points)
 
     # If RV endo I need to merge the septum with the contours
     if which == 'rvendo':

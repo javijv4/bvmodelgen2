@@ -19,7 +19,6 @@ data_path = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplaki
 
 if not os.path.exists(data_path): os.mkdir(data_path)
 
-region_split_file = mesh_folder + 'region.FE'
 mesh_path = mesh_folder + 'bv_model'
 
 boundaries = {'lv_endo'     : 1,
@@ -73,10 +72,13 @@ chio.write_dfile(data_path + 'fiber.field', save)
 save = np.hstack([f_lin,s_lin,n_lin])
 chio.write_dfile(data_path + 'fiber_lin.field', save)
 
+# Save rv-lv division
+chio.write_dfile(data_path + 'rvlv.FE', lap['ven_trans'])
 
 # Save fiber topology
 fib_mesh = fibgen.fib_mesh
 chio.write_mesh(mesh_folder + 'fiber', fib_mesh.points, fib_mesh.cells[0].data)
+
 # Visualization output
 import meshio as io
 data = fibgen.get_fiber_data()

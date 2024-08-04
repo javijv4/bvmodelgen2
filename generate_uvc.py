@@ -15,8 +15,7 @@ if len(sys.argv) > 1:
     patient = sys.argv[1]
 else:
     patient = 'ZS-11'
-mesh_folder = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/{}/mesh/'.format(patient)
-mesh_folder = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/VirtualPatient/dsp-virtual-patient/mesh/'
+mesh_folder = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/' + patient + '/es_mesh_ms25/'
 
 region_split_file = mesh_folder + 'region.FE'
 mesh_path = mesh_folder + 'bv_model'
@@ -70,13 +69,16 @@ if mcg.mmg:
     long = mcg.correct_longitudinal(uvc)
 
 print('Postprocessing ')
+uvc.rv_mesh.point_data['long'] = uvc.bv_mesh.point_data['long'][uvc.map_rv_bv]
+mcg.get_local_vectors(uvc, which='lv')
+mcg.get_local_vectors(uvc, which='rv')
 
 print('Computing AHA segments')
 uvc.compute_aha_segments(aha_type='points')
 uvc.compute_aha_segments(aha_type='elems')
 
 # Collecting results into BV mesh
-uvc.merge_lv_rv_point_data(['circ', 'trans', 'circ_aux', 'long', 'aha'])
+uvc.merge_lv_rv_point_data(['circ', 'trans', 'circ_aux', 'long', 'aha', 'eC', 'eL', 'eT'])
 uvc.merge_lv_rv_cell_data(['aha'])
 
 import meshio as io

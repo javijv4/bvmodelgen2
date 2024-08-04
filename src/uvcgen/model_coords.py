@@ -138,6 +138,15 @@ class UVCGen:
                 corr, _ = dxio.find_vtu_dx_mapping(self.lv_mesh, cells=True)
             g = self.lv_LapSolver.get_array_gradient(array, linear=linear)
             g = g.vector.array.reshape([-1,3])[corr]
+        elif which == 'rv':
+            self.init_rv_mesh(uvc)
+            array = uvc.rv_mesh.point_data[func][self.rv_icorr]
+            if linear:
+                corr, _ = dxio.find_vtu_dx_mapping(self.rv_mesh)
+            else:
+                corr, _ = dxio.find_vtu_dx_mapping(self.rv_mesh, cells=True)
+            g = self.rv_LapSolver.get_array_gradient(array, linear=linear)
+            g = g.vector.array.reshape([-1,3])[corr]
 
         return g
 
@@ -953,22 +962,29 @@ class UVCGen:
         return ot_circ2
 
 
-    def get_local_vectors(self, uvc, linear=True):
-        glong = self.get_func_gradient(uvc, 'long', 'lv', linear=linear)
+    def get_local_vectors(self, uvc, which='lv', linear=True):
+        glong = self.get_func_gradient(uvc, 'long', which, linear=linear)
         eL = glong/np.linalg.norm(glong, axis=1)[:,None]
 
-        gtrans = self.get_func_gradient(uvc, 'trans', 'lv', linear=linear)
+        gtrans = self.get_func_gradient(uvc, 'trans', which, linear=linear)
         eT = gtrans/np.linalg.norm(gtrans, axis=1)[:,None]
 
         eC = np.cross(eL, eT, axisa=1, axisb=1)
         eC = eC/np.linalg.norm(eC, axis=1)[:,None]
 
+        if which == 'lv':
+            mesh = uvc.lv_mesh
+        elif which == 'rv':
+            mesh = uvc.rv_mesh
+        elif which == 'bv':
+            mesh = uvc.bv_mesh
+
         if linear:
-            uvc.lv_mesh.point_data['eL'] = eL
-            uvc.lv_mesh.point_data['eC'] = eC
-            uvc.lv_mesh.point_data['eT'] = eT
+            mesh.point_data['eL'] = eL
+            mesh.point_data['eC'] = eC
+            mesh.point_data['eT'] = eT
         else:
-            uvc.lv_mesh.cell_data['eL'] = [eL]
-            uvc.lv_mesh.cell_data['eC'] = [eC]
-            uvc.lv_mesh.cell_data['eT'] = [eT]
+            mesh.cell_data['eL'] = [eL]
+            mesh.cell_data['eC'] = [eC]
+            mesh.cell_data['eT'] = [eT]
 

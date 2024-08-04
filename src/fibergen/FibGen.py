@@ -457,7 +457,6 @@ class FibGen:
         self.disc_map = disc_map
 
         epi_trans = self.lap['epi_trans'][disc_map]
-        ven_trans = self.lap['ven_trans'][disc_map]
 
         Qrv_septum = self.local_basis['Qrv_septum'][:,:,disc_map]
         Qlv_septum = self.local_basis['Qlv_septum'][:,:,disc_map]

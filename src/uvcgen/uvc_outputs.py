@@ -157,6 +157,9 @@ def export_cheart_inputs(uvc, which='all'):
     chio.write_dfile(uvc.out_folder + 'N3_lv.FE', lv_n3[None])
     chio.write_dfile(uvc.out_folder + 'N3_rv.FE', rv_n3[None])
 
+    for key, value in uvc.bv_mesh.point_data.items():
+        chio.write_dfile(uvc.out_folder + key + '.FE', value)
+
     # Patch ids
     f = open(uvc.out_folder + 'boundaries.P', "w")
     for key in uvc.patches:
