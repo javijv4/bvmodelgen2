@@ -8,7 +8,7 @@ Created on Sun May 26 14:26:30 2023
 
 from src.ImageData import ImageData
 
-patients = ['VB-1']
+patients = ['KL-4']
 
 
 # Inputs

@@ -56,7 +56,7 @@ class ImageData:
         isvalid = {}
         for view, seg_path in seg_paths.items():
             try:
-                data, affine, _, header = readFromNIFTI(seg_path, frame)
+                data, affine, _, header = readFromNIFTI(seg_path, frame, correct_ras=False)
             except:
                 print('Segmentation ' + seg_path + ' not found')
                 continue

@@ -720,7 +720,7 @@ def find_base_nodes(contour, la_vector, sep_vector, weights=None):
                 length[i] = np.linalg.norm(nodes[1] - nodes[0])
 
             base_nodes = perpendicular_nodes[sets[np.argmax(length)][np.array([-1,0])]]
-        
+
         length = np.linalg.norm(hull_points[base_nodes[1]] - hull_points[base_nodes[0]])
         print(length)
         if length < 20:
@@ -783,7 +783,7 @@ def remove_base_nodes(contours, apex=None, mv_centroid=None, min_length=15):
         mv_centroid = np.mean(mv_points, axis=0)
     else:
         mv_centroid = mv_centroid
-        
+
     sa_vector = sa_contours[0].normal
 
     la_length = np.dot(mv_centroid - apex, sa_vector)
