@@ -14,8 +14,8 @@ import cheartio as chio
 # valveweight
 
 patient = 'ZS-11'
-mesh_folder = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/' + patient + '/es_mesh_ms25/'
-data_path = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/' + patient + '/es_data_ms25/'
+mesh_folder = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/' + patient + '/es_mesh_ms2/'
+data_path = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/' + patient + '/es_data_ms2/'
 
 if not os.path.exists(data_path): os.mkdir(data_path)
 
@@ -73,7 +73,9 @@ save = np.hstack([f_lin,s_lin,n_lin])
 chio.write_dfile(data_path + 'fiber_lin.field', save)
 
 # Save rv-lv division
-chio.write_dfile(data_path + 'rvlv.FE', lap['ven_trans'])
+rvlv = fibgen.run_lv_rv(gradient=False)
+mesh.point_data['rvlv'] = rvlv
+chio.write_dfile(data_path + 'rvlv.FE', rvlv)
 
 # Save fiber topology
 fib_mesh = fibgen.fib_mesh

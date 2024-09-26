@@ -11,9 +11,9 @@ import numpy as np
 import meshio as io
 import cheartio as chio
 
-patient = 'KL-4'
-mesh_folder = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/' + patient + '/es_mesh_ms25/'
-data_path = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/' + patient + '/es_data_ms25/'
+patient = 'ZS-11'
+mesh_folder = '/Users/jjv/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/' + patient + '/es_mesh_ms2/'
+data_path = '/Users/jjv/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/' + patient + '/es_data_ms2/'
 
 propagation = 16 # Propagation away from the valves
 
@@ -85,14 +85,19 @@ valve_weight[valve_weight > 1] = 1
 valve_weight = valve_weight-bridge
 
 #%%
-# # Apply sigmoid function to valve_weight
-# x = 2*valve_weight - 1.0
-# sigmoid_valve_weight = (np.tanh(2*x)/np.tanh(2)+1)/2
-# sigmoid_valve_weight[sigmoid_valve_weight<1e-2] = 0 
+# Apply sigmoid function to valve_weight
+x = 2*valve_weight - 1.0
+sigmoid_valve_weight = (np.tanh(2*x)/np.tanh(2)+1)/2
+sigmoid_valve_weight[sigmoid_valve_weight<1e-2] = 0 
 
-# x = 2*bridge - 1.0
-# sigmoid_bridge = (np.tanh(x)/np.tanh(1)+1)/2
-# sigmoid_bridge[sigmoid_bridge<1e-2] = 0
+x = 2*bridge - 1.0
+sigmoid_bridge = (np.tanh(x)/np.tanh(1)+1)/2
+sigmoid_bridge[sigmoid_bridge<1e-2] = 0
+
+valve_weight[valve_weight > 1] = 1
+bridge[bridge > 1] = 1
+valve_weight[valve_weight < 0] = 0
+bridge[bridge < 0] = 0
 
 mesh.point_data['mv_av_bridge'] = bridge
 mesh.point_data['valve_weight'] = valve_weight

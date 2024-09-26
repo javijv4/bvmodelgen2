@@ -23,10 +23,16 @@ vol_to_surf_elem = {'hexahedron': 'quad',
 
 
 # load CHeart files
-def read_mesh(path, meshio=False, element=None):
+def read_mesh(path, meshio=False, element=None, tfile=None, xfile=None):
     # Load mesh
-    xyz = np.loadtxt(path + '_FE.X', skiprows = 1)
-    ien = np.loadtxt(path + '_FE.T', skiprows = 1, dtype=int) - 1
+    if xfile is None:
+        xyz = np.loadtxt(path + '_FE.X', skiprows = 1)
+    else:
+        xyz = np.loadtxt(path + xfile, skiprows = 1)
+    if tfile is None:
+        ien = np.loadtxt(path + '_FE.T', skiprows = 1, dtype=int) - 1
+    else:
+        ien = np.loadtxt(path + tfile, skiprows = 1, dtype=int) - 1
     try: bfile = np.loadtxt(path + '_FE.B', skiprows = 1)
     except: bfile = np.array([])
 
@@ -37,10 +43,11 @@ def read_mesh(path, meshio=False, element=None):
     else:
         return xyz, ien, element
 
-def read_bfile(path):
+def read_bfile(path, element=None):
     array = np.loadtxt(path + '_FE.B', skiprows = 1, dtype=int)
     array[:,0:-1] = array[:,0:-1] - 1
-    _, _, element = read_mesh(path)
+    if element is None:
+        _, _, element = read_mesh(path)
     array[:,1:-1] = connectivity_CH2vtu(vol_to_surf_elem[element], array[:,1:-1])    # Correct order to vtu order
     return array
 

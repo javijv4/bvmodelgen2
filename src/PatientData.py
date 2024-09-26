@@ -5,6 +5,8 @@ Created on Wed May 8 18:08:25 2020
 
 @author: javijv4
 """
+import os
+dir_path = os.path.dirname(os.path.realpath(__file__))
 
 import numpy as np
 from scipy.interpolate import interp1d
@@ -13,7 +15,7 @@ from shapely.geometry import Polygon
 import matplotlib.pyplot as plt
 from scipy.optimize import minimize, Bounds
 from scipy.spatial import KDTree
-from masks2contours import m2c, slicealign
+
 
 class PatientData:
     def __init__(self, sa_img_path, la_img_paths, volume_files,
@@ -27,11 +29,11 @@ class PatientData:
         self.cycle_time = sa_cycle_time
 
         # Get volume traces
-        sa_lv_vol = np.loadtxt(volume_files[0])
-        sa_rv_vol = np.loadtxt(volume_files[1])
+        sa_vol_time, sa_lv_vol = np.loadtxt(volume_files[0]).T
+        sa_rv_vol = np.loadtxt(volume_files[1])[:,1]
         self.lv_volume = sa_lv_vol
         self.rv_volume = sa_rv_vol
-        self.volume_time = np.arange(len(self.lv_volume))*self.sa_dt
+        self.volume_time = sa_vol_time*sa_cycle_time/1000
 
         # Load LA data
         self.la_imgs, self.la_dt = self.load_la_imgs(la_img_paths)
@@ -45,9 +47,9 @@ class PatientData:
         self.rv_valve_times = {key: value*self.la_dt for key, value in rv_valve_frames.items()}
 
         # Loading reference pressure data # TODO put everything in a single file and pass it as argument
-        self.normalized_time, self.normalized_pressure = np.load('src/pvloop/refdata/normalized_human_pressure.npy').T
+        self.normalized_time, self.normalized_pressure = np.load(f'{dir_path}/pvloop/refdata/normalized_human_pressure.npy').T
         self.normalized_func = interp1d(self.normalized_time, self.normalized_pressure)
-        self.normalized_valve_times = np.load('src/pvloop/refdata/normalized_valve_times.npz')
+        self.normalized_valve_times = np.load(f'{dir_path}/pvloop/refdata/normalized_valve_times.npz')
 
         self.lv_events = ['mvc', 'avo', 'avc', 'mvo', 'tcycle']
         self.rv_events = ['tvc', 'pvo', 'pvc', 'tvo', 'tcycle']
@@ -199,7 +201,7 @@ class PatientData:
         # Repeat volume and pressure traces three times
         self.lv_volume = np.concatenate([self.lv_volume, self.lv_volume, self.lv_volume])
         self.rv_volume = np.concatenate([self.rv_volume, self.rv_volume, self.rv_volume])
-        self.volume_time = np.arange(len(self.lv_volume))*self.sa_dt - self.volume_time[-1]
+        self.volume_time = np.linspace(0,1,len(self.lv_volume))*self.cycle_time*3 #- self.volume_time[-1]
 
         self.pressure_time = np.concatenate([self.pressure_time - self.pressure_time[-1], self.pressure_time, self.pressure_time[-1] + self.pressure_time])
         self.lv_pressure = np.concatenate([self.lv_pressure, self.lv_pressure, self.lv_pressure])

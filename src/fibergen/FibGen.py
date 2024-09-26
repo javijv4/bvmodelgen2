@@ -83,7 +83,6 @@ class FibGen:
         else:
             return lap
 
-
     def run_lv_av(self, gradient=True):
         bcs_marker = {'point': self.bc_apex,
                       'face': {self.bndry['av']: 0.0}}
@@ -197,6 +196,15 @@ class FibGen:
         bcs_marker = {'face': {self.bndry['lv_endo']: 1.0,
                                self.bndry['rv_endo']: 0.0,
                                self.bndry['rv_septum']: 0.0}}
+
+        lap = self.run_laplace(bcs_marker, return_gradient=gradient)
+        return lap
+    
+    def run_lv_rv(self, gradient=True):
+        bcs_marker = {'function': {self.bndry['lv_epi']: self.lap['ven_trans'][self.bv_icorr],
+                                   self.bndry['rv_epi']: self.lap['ven_trans'][self.bv_icorr]},
+                        'face': {self.bndry['rv_septum']: 1.0,
+                                 self.bndry['lv_endo']: 1.0}}
 
         lap = self.run_laplace(bcs_marker, return_gradient=gradient)
         return lap

@@ -12,7 +12,7 @@ import numpy as np
 import cheartio as chio
 from PatientData import PatientData
 
-path = '/Users/jjv/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/'
+path = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/'
 patient = 'ZS-11'
 imgs_fldr = path + patient + '/Images/'
 data_fldr = path + patient + '/es_data_ms25/'
@@ -82,7 +82,7 @@ rv_ef = (np.max(rv_vol) - np.min(rv_vol))/np.max(rv_vol)
 
 norm_vol = (lv_vol - np.min(lv_vol))/(lv_vol[0] - np.min(lv_vol))
 
-lv_edv = lv_vol[0] 
+lv_edv = lv_vol[0]
 lv_esv = np.min(lv_vol)
 
 new_lv_vol = norm_vol*(lv_ed_volume-lv_es_volume) + lv_es_volume

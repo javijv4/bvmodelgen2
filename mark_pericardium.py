@@ -15,8 +15,8 @@ import networkx as nx
 from tqdm import tqdm
 
 patient = 'ZS-11'
-mesh_folder = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/' + patient + '/es_mesh_ms25/'
-data_path = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/' + patient + '/es_data_ms25/'
+mesh_folder = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/' + patient + '/es_mesh_ms2/'
+data_path = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/' + patient + '/es_data_ms2/'
 
 mv_normal = chio.read_dfile(mesh_folder + 'mv_normal.FE')
 
@@ -138,6 +138,17 @@ epi_nodes = 1-marker
 #%%
 # # Calculate the surface distance of the epi nodes to the base nodes
 epi_elems = np.where(np.sum(np.isin(surf, np.where(epi_nodes)[0]), axis=1) > 2)[0]
+
+epi_marker = np.zeros(len(surf))
+epi_marker[epi_elems] = 1
+io.write_points_cells('check.vtu', xyz, {'triangle':surf}, cell_data={'epi_marker':[epi_marker]})
+
+add = np.loadtxt('add.txt', usecols=1, skiprows=1, delimiter=',', dtype=int)
+delete = np.loadtxt('del.txt', usecols=1, skiprows=1, delimiter=',', dtype=int)
+epi_marker[add] = 1
+epi_marker[delete] = 0
+epi_elems = np.where(epi_marker)[0]
+
 epi_elems = surf[epi_elems]
 epi_weight = np.zeros(len(mesh.points))
 epi_weight[epi_elems.ravel()] = 1
@@ -173,6 +184,6 @@ epi_weight[non_epi_nodes] = 0
 
 chio.write_dfile(data_path + 'pericardium_mask.FE', epi_weight)
 
-# mesh.point_data['marker'] = marker
-# mesh.point_data['epi_weight'] = epi_weight
-# io.write('check.vtu', mesh)
+mesh.point_data['marker'] = marker
+mesh.point_data['epi_weight'] = epi_weight
+io.write('check.vtu', mesh)
