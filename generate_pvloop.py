@@ -42,7 +42,7 @@ pdata = PatientData(imgs_fldr + 'SA.nii', {'la_4ch': imgs_fldr + 'LA_4CH.nii'}, 
 lv_vol, lv_pres, lv_vtimes = pdata.get_lv_pv_loop(0, {'avo': 0, 'avc': 0, 'mvo': 0})
 rv_vol, rv_pres, rv_vtimes = pdata.get_rv_pv_loop(0, {'pvo': 0, 'pvc': 0, 'tvo': 0})
 
-pdata.plot_volume_pressure_traces(lv_vol, lv_pres, rv_vol, rv_pres, lv_vtimes, rv_vtimes)
+pdata.plot_volume_pressure_traces(None, lv_vol, lv_pres, rv_vol, rv_pres, lv_vtimes, rv_vtimes)
 plt.savefig(pngs_fldr + 'pv_trace_raw.png', dpi=180, bbox_inches='tight')
 
 pdata.plot_pv_loop(None, lv_vol, lv_pres, rv_vol, rv_pres, lv_vtimes, rv_vtimes)
@@ -57,7 +57,7 @@ sol = pdata.optimize_pv_area(side='rv')
 rv_shift, pvo, pvc, tvo = sol.x
 rv_vol, rv_pres, rv_vtimes = pdata.get_rv_pv_loop(rv_shift, {'pvo': pvo, 'pvc': pvc, 'tvo': tvo})
 
-pdata.plot_volume_pressure_traces(lv_vol, lv_pres, rv_vol, rv_pres, lv_vtimes, rv_vtimes)
+pdata.plot_volume_pressure_traces(None, lv_vol, lv_pres, rv_vol, rv_pres, lv_vtimes, rv_vtimes)
 plt.savefig(pngs_fldr + 'pv_trace_opt.png', dpi=180, bbox_inches='tight')
 
 pdata.plot_pv_loop(None, lv_vol, lv_pres, rv_vol, rv_pres, lv_vtimes, rv_vtimes)
@@ -128,8 +128,8 @@ rv_vframes = {k: np.round(v/pdata.la_dt).astype(int) for k, v in rv_vtimes.items
 chio.write_ch_dictionary(data_fldr + 'rv_valve_frames.INIT', rv_vframes)
 
 # Plots
-pdata.plot_volume_pressure_traces(lv_vol, lv_pres, rv_vol, rv_pres, lv_vtimes, rv_vtimes)
+pdata.plot_volume_pressure_traces(None, lv_vol, lv_pres, rv_vol, rv_pres, lv_vtimes, rv_vtimes)
 plt.savefig(pngs_fldr + 'pv_trace.png', dpi=180, bbox_inches='tight')
 
-pdata.plot_pv_loop(None, lv_vol, lv_pres, rv_vol, rv_pres, lv_vtimes, rv_vtimes, add_klotz=True)
+pdata.plot_pv_loop(None, lv_vol, lv_pres, rv_vol, rv_pres, lv_vtimes, rv_vtimes, add_klotz=False)
 plt.savefig(pngs_fldr + 'pv_loop.png', dpi=180, bbox_inches='tight')

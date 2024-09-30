@@ -110,8 +110,6 @@ def clean_volume_trace(vol_trace):
         voi = voi_clean
         vol_trace = vol_trace_clean
 
-        print(bad_points)
-
     return voi_clean, vol_trace
 
 np.savetxt(path + 'lv_volume_raw.txt', np.array(lv_volume)[:,None])
@@ -123,7 +121,7 @@ lv_vol_func = PchipInterpolator(lv_vol_time, lv_vol)
 rv_vol_time, rv_vol = clean_volume_trace(rv_volume)
 rv_vol_func = PchipInterpolator(rv_vol_time, rv_vol)
 
-x = np.linspace(0, len(lv_volume), 1000)
+x = np.linspace(0, len(lv_volume), 1000)[:-1]
 lv_vol = np.column_stack((x/np.max(x), lv_vol_func(x)))
 rv_vol = np.column_stack((x/np.max(x), rv_vol_func(x)))
 

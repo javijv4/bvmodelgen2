@@ -201,7 +201,7 @@ class PatientData:
         # Repeat volume and pressure traces three times
         self.lv_volume = np.concatenate([self.lv_volume, self.lv_volume, self.lv_volume])
         self.rv_volume = np.concatenate([self.rv_volume, self.rv_volume, self.rv_volume])
-        self.volume_time = np.linspace(0,1,len(self.lv_volume))*self.cycle_time*3 #- self.volume_time[-1]
+        self.volume_time = np.linspace(0,1,len(self.lv_volume))*self.cycle_time*3 - self.cycle_time
 
         self.pressure_time = np.concatenate([self.pressure_time - self.pressure_time[-1], self.pressure_time, self.pressure_time[-1] + self.pressure_time])
         self.lv_pressure = np.concatenate([self.lv_pressure, self.lv_pressure, self.lv_pressure])
@@ -213,7 +213,7 @@ class PatientData:
         rv_vol_func = interp1d(self.volume_time, self.rv_volume, fill_value='extrapolate')
         rv_pres_func = interp1d(self.pressure_time, self.rv_pressure, fill_value='extrapolate')
 
-        time = np.linspace(0, self.cycle_time, 1001)
+        time = np.linspace(0, self.cycle_time, 1001)[:-1]
         return time, lv_vol_func, lv_pres_func, rv_vol_func, rv_pres_func
 
 
@@ -324,8 +324,25 @@ class PatientData:
             # print(st_ind)
             # pass
 
-        lv_pres[st_ind:] = pres_klotz[st_ind:]
-        return lv_pres
+        # lv_pres[st_ind:] = pres_klotz[st_ind:]
+
+        # Find pv gradient
+        slope_pres = (lv_pres[st_ind] - lv_pres[st_ind-1])/(lv_vol[st_ind] - lv_vol[st_ind-1])
+        lv_pres_aux = lv_pres.copy()
+
+        for i in range(st_ind+1, len(lv_pres)):
+            lv_pres_aux[i] = lv_pres_aux[i-1] + slope_pres*(lv_vol[i] - lv_vol[i-1])
+
+        below_the_curve = np.where(lv_pres_aux < pres_klotz)[0]
+        lv_pres_aux[below_the_curve] = pres_klotz[below_the_curve]
+
+        # plt.figure(1, clear=True)
+        # plt.plot(lv_vol, lv_pres)
+        # plt.plot(lv_vol, pres_klotz)
+        # plt.plot(lv_vol, lv_pres_aux)
+        # plt.plot(lv_vol[dias_ind], lv_pres[dias_ind], 'o')
+        # plt.plot(lv_vol[st_ind], lv_pres[st_ind], 'o')
+        return lv_pres_aux
 
 
 
@@ -360,7 +377,7 @@ class PatientData:
     Plotting functions
     """
 
-    def plot_volume_pressure_traces(self, lv_vol=None, lv_pres=None, rv_vol=None, rv_pres=None, lv_valve_times=None, rv_valve_times=None):
+    def plot_volume_pressure_traces(self, axs=None, lv_vol=None, lv_pres=None, rv_vol=None, rv_pres=None, lv_valve_times=None, rv_valve_times=None):
         if lv_vol is None:
             lv_vol_func = self.lv_vol_func
         else:
@@ -382,7 +399,8 @@ class PatientData:
         if rv_valve_times is None:
             rv_valve_times = self.rv_valve_times
 
-        fig, axs = plt.subplots(2, 1, clear=True, figsize=(4,8), num=1, sharex=True)
+        if axs is None:
+            fig, axs = plt.subplots(2, 1, clear=True, figsize=(4,8), num=1, sharex=True)
         axs[0].plot(self.time, lv_pres_func(self.time)*7.50062, 'k', label='LV')
         axs[0].plot(self.time, rv_pres_func(self.time)*7.50062, 'k--', label='RV')
         axs[1].plot(self.time, lv_vol_func(self.time)/1000, 'k')
@@ -411,6 +429,8 @@ class PatientData:
         axs[0].plot([],[],'ro', label='Valve events')
         axs[0].legend(frameon=False)
         axs[0].set_ylim([-5, 135])
+
+        return axs
 
 
     def plot_pv_loop(self, ax=None, lv_vol=None, lv_pres=None, rv_vol=None, rv_pres=None, lv_valve_times=None, rv_valve_times=None, add_klotz=False):
