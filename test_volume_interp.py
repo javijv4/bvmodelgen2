@@ -63,7 +63,7 @@ def clean_volume_trace(vol_trace):
 
 # Inputs
 patient = 'ZS-11'
-path = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/' + patient + '/Images/'
+path = '/Users/jjv/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/' + patient + '/Images/'
 lv_vol = np.loadtxt(path + 'lv_volume_raw.txt')
 
 
@@ -75,11 +75,11 @@ lv_vol_clean_interp = PchipInterpolator(voi_clean, lv_vol_clean)
 
 x = np.linspace(0, len(lv_vol), 1000)
 plt.figure(1, clear=True)
-# plt.plot(lv_vol, 'o')
+plt.plot(lv_vol, 'o')
 # plt.plot(arr[contraction_mask], lv_vol[contraction_mask==1], 'o')
 # plt.plot(diastole_peaks, lv_vol[diastole_peaks], 'x')
 # plt.plot(systole_peaks, lv_vol[systole_peaks], 'x')
 # plt.plot(voi_clean, lv_vol_clean, 'o')
 plt.plot(x, lv_vol_interp(x), '-')
 plt.plot(x, lv_vol_clean_interp(x), '-')
-
+plt.show()

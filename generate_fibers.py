@@ -32,7 +32,7 @@ boundaries = {'lv_endo'     : 1,
               'mv'          : 9,
               'rv_lv_junction'          : 10}
 
-apex_id = 11812  # lv apex point in the epicardium
+apex_id = 16813  # lv apex point in the epicardium
 
 # Constants (in deg)
 params = {
@@ -64,7 +64,8 @@ bdata = chio.read_bfile(mesh_path)
 fibgen = FibGen(mesh, bdata, boundaries, apex_id, params)
 lap, grad = fibgen.run_laplace_problems()
 f, s, n = fibgen.get_fibers()
-f_lin, s_lin, n_lin = fibgen.get_linear_fibers()   # Just for comparison purposes
+f_lin, s_lin, n_lin = fibgen.get_linear_fibers(method='bislerp')   # Just for comparison purposes
+print(f_lin.shape)
 
 # Save results
 save = np.hstack([f,s,n])
@@ -90,4 +91,7 @@ io.write(data_path + 'fiber.vtu', fibgen.fib_mesh)
 
 data = fibgen.get_point_data()
 fibgen.mesh.point_data = data
+fibgen.mesh.point_data['f'] = f_lin
+fibgen.mesh.point_data['s'] = s_lin
+fibgen.mesh.point_data['n'] = n_lin
 io.write(data_path + 'fiber_data.vtu', fibgen.mesh)

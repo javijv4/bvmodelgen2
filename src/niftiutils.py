@@ -9,6 +9,19 @@ Created on Fri Sep  8 10:41:24 2023
 import numpy as np
 import nibabel as nib
 
+def affine_pixdim(affine):
+    vector = affine@np.array([0,0,1,0])-affine@np.array([0,0,0,0])
+    pixdim = np.linalg.norm(vector[0:3])
+    return pixdim
+
+def get_correct_affine(img):
+    zooms = img.header.get_zooms()[0:3]
+
+    if np.isclose(affine_pixdim(img.affine), zooms[2]): return img.affine
+    elif np.isclose(affine_pixdim(img.get_sform()), zooms[2]): return img.get_sform()
+    elif np.isclose(affine_pixdim(img.get_qform()), zooms[2]): return img.get_qform()
+
+
 def readFromNIFTI(segName, frameNum, correct_ras=True):
     ''' Helper function used by masks2ContoursSA() and masks2ContoursLA(). Returns (seg, transform, pixSpacing). '''
     # Load NIFTI image and its header.
@@ -31,6 +44,11 @@ def readFromNIFTI(segName, frameNum, correct_ras=True):
 
     # Get the 4x4 homogeneous affine matrix.
     transform = img.affine  # In the MATLAB script, we transposed the transform matrix at this step. We do not need to do this here due to how nibabel works.
+    
+    print(transform)
+    transform = get_correct_affine(img)
+    print(transform)
+
     if correct_ras:
         transform[0:2, :] = -transform[0:2, :] # This edit has to do with RAS system in Nifti
     # Initialize pixSpacing. In MATLAB, pix_spacing is info.PixelDimensions(1). After converting from 1-based

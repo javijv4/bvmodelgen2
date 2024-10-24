@@ -199,7 +199,7 @@ def plot_seg_files(seg_files, which=2):
     fig = go.Figure()
     for file in seg_files:
         # Load data
-        img = nib.load(file)
+        img = nib.load(file + '.nii.gz')
         data = img.get_fdata().astype(float)
 
         points_ijk = np.vstack(np.where(np.isclose(data, which))).T

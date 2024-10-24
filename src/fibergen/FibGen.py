@@ -479,26 +479,35 @@ class FibGen:
 
         return Q
 
-    def get_linear_fibers(self):
-        _, disc_map, _ = self.generate_discontinuous_mesh(self.lap['ven_trans'])
+    def get_linear_fibers(self, method='bislerp'):
+        # Map to continuous mesh
+        map_disc = chio.map_between_meshes_disc(self.mesh, self.fib_mesh)
+        if method == 'bislerp':
+            _, disc_map, _ = self.generate_discontinuous_mesh(self.lap['ven_trans'])
 
-        epi_trans = self.lap['epi_trans'][disc_map]
-        ven_trans = self.lap['ven_trans'][disc_map]
+            epi_trans = self.lap['epi_trans'][disc_map]
+            ven_trans = self.lap['ven_trans'][disc_map]
 
-        Qrv_septum = self.local_basis['Qrv_septum'][:,:,disc_map]
-        Qlv_septum = self.local_basis['Qlv_septum'][:,:,disc_map]
-        Qrv_epi = self.local_basis['Qrv_epi'][:,:,disc_map]
-        Qlv_epi = self.local_basis['Qlv_epi'][:,:,disc_map]
+            Qrv_septum = self.local_basis['Qrv_septum'][:,:,disc_map]
+            Qlv_septum = self.local_basis['Qlv_septum'][:,:,disc_map]
+            Qrv_epi = self.local_basis['Qrv_epi'][:,:,disc_map]
+            Qlv_epi = self.local_basis['Qlv_epi'][:,:,disc_map]
 
-        Qs = Qrv_septum
-        Qs[:,:,ven_trans > 0.5] = Qlv_septum[:,:,ven_trans > 0.5]
+            Qs = Qrv_septum
+            Qs[:,:,ven_trans > 0.5] = Qlv_septum[:,:,ven_trans > 0.5]
 
-        Qepi = self.bislerp(Qrv_epi, Qlv_epi, ven_trans)
-        Q = self.bislerp(Qs, Qepi, epi_trans)
-        f, n, s = Q
-        self.f_linear = f.T
-        self.s_linear = s.T
-        self.n_linear = n.T
+            Qepi = self.bislerp(Qrv_epi, Qlv_epi, ven_trans)
+            Q = self.bislerp(Qs, Qepi, epi_trans)
+            f, n, s = Q
+
+            self.f_linear = f.T[map_disc]
+            self.s_linear = s.T[map_disc]
+            self.n_linear = n.T[map_disc]
+
+        elif method == 'interpolate':
+            self.f_linear = self.f[map_disc]
+            self.s_linear = self.s[map_disc]
+            self.n_linear = self.n[map_disc]
 
         return self.f_linear, self.s_linear, self.n_linear
 

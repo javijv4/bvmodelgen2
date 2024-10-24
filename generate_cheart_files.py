@@ -13,8 +13,8 @@ import cheartio as chio
 
 frame = 0
 patient = 'ZS-11'
-simmodeler_path = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/{}/Images/test_frame{}/'.format(patient, frame)
-mesh_path = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/{}/mesh/'.format(patient)
+simmodeler_path = '/Users/jjv/Downloads/'
+mesh_path = '/Users/jjv/Downloads/'
 model_name = 'bv_model'          # output name for CH files
 vol_mesh_name = simmodeler_path + 'volume'
 surf_mesh_name = simmodeler_path + 'surface'
