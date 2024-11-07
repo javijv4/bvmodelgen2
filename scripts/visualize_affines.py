@@ -99,3 +99,5 @@ points_xyz = nib.affines.apply_affine(affine, points_ijk)
 show_point_cloud(points_xyz, fig=fig, opacity=0.5, size=5, label=os.path.basename(file).split('.')[0])
 
 fig.show()
+
+

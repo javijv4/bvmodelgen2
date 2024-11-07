@@ -19,7 +19,7 @@ else:
     patient = 'TS-9'
 fldr = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/' + patient + '/LGE/'
 
-seg_files = {'sa': fldr + 'SA_seg',
+seg_files = {'sa': fldr + 'sa_seg',
             'la_2ch': fldr + 'LA_2CH_seg',
             'la_3ch': fldr + 'LA_3CH_seg',
             'la_4ch': fldr + 'LA_4CH_seg',
