@@ -23,44 +23,6 @@ def get_correct_affine(img):
     elif np.isclose(affine_pixdim(img.get_qform()), zooms[2]): return img.get_qform()
 
 
-def readFromNIFTI(segName, frameNum, correct_ras=True):
-    ''' Helper function used by masks2ContoursSA() and masks2ContoursLA(). Returns (seg, transform, pixSpacing). '''
-    # Load NIFTI image and its header.
-    if os.path.isfile(segName):
-        ext = ''
-    elif os.path.isfile(segName + '.nii.gz'):
-        ext = '.nii.gz'
-    elif os.path.isfile(segName + '.nii'):
-        ext = '.nii'
-    else:
-        raise FileNotFoundError('File {} was not found'.format(segName))
-
-    img = nib.load(segName + ext)
-    hdr = img.header
-
-    # Get the segmentation from the NIFTI file.
-    seg = img.get_fdata()
-    if seg.ndim > 3:  # if segmentation includes all time points
-        seg = seg[:, :, :, frameNum]
-
-    # Get the 4x4 homogeneous affine matrix.
-    transform = img.affine  # In the MATLAB script, we transposed the transform matrix at this step. We do not need to do this here due to how nibabel works.
-    
-    print(transform)
-    transform = get_correct_affine(img)
-    print(transform)
-
-    if correct_ras:
-        transform[0:2, :] = -transform[0:2, :] # This edit has to do with RAS system in Nifti
-    # Initialize pixSpacing. In MATLAB, pix_spacing is info.PixelDimensions(1). After converting from 1-based
-    # indexing to 0-based indexing, one might think that that means pixSpacing should be pixdim[0], but this is not the
-    # case due to how nibabel stores NIFTI headers.
-    pixdim = hdr.structarr["pixdim"][1:3 + 1]
-    pixSpacing = pixdim[1]
-
-    return (seg, transform, pixdim, hdr)
-
-
 # def readFromNIFTI(segName, frameNum, correct_ras=True):
 #     ''' Helper function used by masks2ContoursSA() and masks2ContoursLA(). Returns (seg, transform, pixSpacing). '''
 #     # Load NIFTI image and its header.
@@ -73,14 +35,55 @@ def readFromNIFTI(segName, frameNum, correct_ras=True):
 #     else:
 #         raise FileNotFoundError('File {} was not found'.format(segName))
 
-#     img = mt.LoadImage(image_only=True)(segName + ext)
-#     seg = img.numpy().astype(float)
-#     transform = img.affine.numpy()
-#     pixdim = img.pixdim.numpy()
+#     img = nib.load(segName + ext)
+#     hdr = img.header
 
-#     hdr = None
+#     # Get the segmentation from the NIFTI file.
+#     seg = img.get_fdata()
+#     if seg.ndim > 3:  # if segmentation includes all time points
+#         seg = seg[:, :, :, frameNum]
+
+#     # Get the 4x4 homogeneous affine matrix.
+#     transform = img.affine  # In the MATLAB script, we transposed the transform matrix at this step. We do not need to do this here due to how nibabel works.
+    
+#     print(transform)
+#     transform = get_correct_affine(img)
+#     print(transform)
+
+#     if correct_ras:
+#         transform[0:2, :] = -transform[0:2, :] # This edit has to do with RAS system in Nifti
+#     # Initialize pixSpacing. In MATLAB, pix_spacing is info.PixelDimensions(1). After converting from 1-based
+#     # indexing to 0-based indexing, one might think that that means pixSpacing should be pixdim[0], but this is not the
+#     # case due to how nibabel stores NIFTI headers.
+#     pixdim = hdr.structarr["pixdim"][1:3 + 1]
+#     pixSpacing = pixdim[1]
 
 #     return (seg, transform, pixdim, hdr)
+
+
+def readFromNIFTI(segName, frameNum, correct_ras=True):
+    ''' Helper function used by masks2ContoursSA() and masks2ContoursLA(). Returns (seg, transform, pixSpacing). '''
+    # Load NIFTI image and its header.
+    if os.path.isfile(segName):
+        ext = ''
+    elif os.path.isfile(segName + '.nii.gz'):
+        ext = '.nii.gz'
+    elif os.path.isfile(segName + '.nii'):
+        ext = '.nii'
+    else:
+        raise FileNotFoundError('File {} was not found'.format(segName))
+
+    img = mt.LoadImage(image_only=True)(segName + ext)
+    seg = img.numpy().astype(float)
+    transform = img.affine.numpy()
+    pixdim = img.pixdim.numpy()
+
+    if seg.ndim > 3:  # if segmentation includes all time points
+        seg = seg[:, :, :, frameNum]
+
+    hdr = None
+
+    return (seg, transform, pixdim, hdr)
 
 
 

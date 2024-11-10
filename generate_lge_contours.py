@@ -18,6 +18,7 @@ if len(sys.argv) > 1:
 else:
     patient = 'TS-9'
 fldr = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/' + patient + '/LGE/'
+fldr = '/home/jilberto/Downloads/LGE_Javi_check/LGE/'
 
 seg_files = {'sa': fldr + 'sa_seg',
             'la_2ch': fldr + 'LA_2CH_seg',
