@@ -135,12 +135,6 @@ class ImageData:
                 continue
             print('Loaded ' + view.upper() + ' segmentation.')
 
-            # correct labels to the same convention
-            if view == 'sa':
-                cmr.data = correct_labels(cmr.data, self.sa_labels)
-            else:
-                cmr.data = correct_labels(cmr.data, self.la_labels)
-
             print('Extracting slices for segmentation...')
             slices += cmr.extract_slices(defseptum=True)
             cmrs[view] = cmr
@@ -152,6 +146,11 @@ class ImageData:
 
 
     def align_slices(self, translation_files_path=None, method=2, show=False):
+        fig = pf.plot_slices(self.slices)
+        if show:
+            fig.show()
+        pf.save_figure(self.output_fldr + 'init_align.html', fig)
+        
         if translation_files_path is None:
             # Compute alignment
             print('Calculating alignment using Sinclair algorithm...')

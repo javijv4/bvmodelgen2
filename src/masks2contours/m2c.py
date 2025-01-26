@@ -21,6 +21,7 @@ from masks2contours.SelectFromCollection import SelectFromCollection
 
 
 def correct_labels(seg, labels):
+    print('Correcting labels...')
     new_seg = np.copy(seg)
     for i, which in enumerate(['lvbp', 'lv', 'rv']):
         vals = labels[which]
@@ -71,6 +72,7 @@ class CMRImage:
         slices = []
         for n in range(self.data.shape[2]):
             data_slice = self.data[:,:,n]
+
             if np.all(data_slice==0): continue   # avoid saving slices with no data
             origin = nib.affines.apply_affine(self.affine, np.array([0,0,n]))
             slc = CMRSlice(data_slice, origin, normal, n, self, defseptum=defseptum)
@@ -238,6 +240,7 @@ class CMRSlice:
         if 'sa' in self.cmr.view:
             [dup, _, _] = ut.sharedRows(LVepiCS, LVendoCS)
             if len(dup) > 0:  # If they share rows, the slice is not valid
+                print('Found shared rows between LVendo and LVepi, something must be wrong with the segmentations and/or slices!!!')
                 return False
 
         # Differentiate contours for RV free wall and RV septum.
