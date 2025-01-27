@@ -18,7 +18,6 @@ la_labels = {'lv': 2., 'rv': 3., 'lvbp': 1.}
 
 for patient in patients:
     path = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/' + patient + '/Images/'
-    path = '/home/jilberto/University of Michigan Dropbox/Javiera Jilberto Vallejos/Projects/Modeling/bvmodelgen3/test_data/Images/'
 
     segs = {'sa': path + 'sa_seg',
                 'la_4ch': path + 'la_4ch_seg',

@@ -73,7 +73,8 @@ class ImageData:
 
             new_data, isvalid[view] = check_seg_valid(view, data, labels, autoclean=autoclean)
 
-            new_seg = nib.Nifti1Image(new_data, affine, header=header)
+            new_seg = nib.Nifti1Image(new_data, affine)
+            new_seg.set_qform(affine)
             nib.save(new_seg, self.output_fldr + view.upper() + '.nii.gz')
             seg_files[view] = self.output_fldr + view.upper() + '.nii.gz'
 
