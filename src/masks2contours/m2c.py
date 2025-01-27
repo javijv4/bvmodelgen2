@@ -849,7 +849,6 @@ def cleanContours(contours, downsample):
 def add_valves(contours, all_valves, cmrs, translations={}):
     # To define valve points and apex
     valvelabels = np.array(['mv','mv','mv','mv','mv','mv','av','av','tv','tv'], dtype=object)
-    valvelabels = np.array(['mv','tv','av'], dtype=object)
 
     for view in all_valves.keys():
         valves = all_valves[view]
