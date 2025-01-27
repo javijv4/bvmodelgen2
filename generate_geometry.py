@@ -8,7 +8,7 @@ Created on Sun May 26 14:26:30 2023
 
 from src.ImageData import ImageData
 
-patients = ['KL-4']
+patients = ['AB-17']
 
 
 # Inputs
@@ -18,11 +18,12 @@ la_labels = {'lv': 2., 'rv': 3., 'lvbp': 1.}
 
 for patient in patients:
     path = '/home/jilberto/Dropbox (University of Michigan)/Projects/Desmoplakin/Models/DSPPatients/' + patient + '/Images/'
+    path = '/home/jilberto/University of Michigan Dropbox/Javiera Jilberto Vallejos/Projects/Modeling/bvmodelgen3/test_data/Images/'
 
-    segs = {'sa': path + 'SA_seg',
-                'la_4ch': path + 'LA_4CH_seg',
-                'la_3ch': path + 'LA_3CH_seg',
-                'la_2ch': path + 'LA_2CH_seg'}
+    segs = {'sa': path + 'sa_seg',
+                'la_4ch': path + 'la_4ch_seg',
+                'la_3ch': path + 'la_3ch_seg',
+                'la_2ch': path + 'la_2ch_seg'}
 
     valves = {'la_4ch': path + 'LA_4CH_valves',
                 'la_3ch': path + 'LA_3CH_valves',

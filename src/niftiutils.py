@@ -81,6 +81,9 @@ def readFromNIFTI(segName, frameNum, correct_ras=True):
     if seg.ndim > 3:  # if segmentation includes all time points
         seg = seg[:, :, :, frameNum]
 
+    if correct_ras:
+        transform[0:2, :] = -transform[0:2, :] # This edit has to do with RAS system in Nifti
+
     hdr = None
 
     return (seg, transform, pixdim, hdr)
