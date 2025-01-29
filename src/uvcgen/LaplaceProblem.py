@@ -40,7 +40,7 @@ def project(v, target_func, bcs=[]):
     # Solve linear system
     solver = PETSc.KSP().create(A.getComm())
     solver.setOperators(A)
-    solver.solve(b, target_func.vector)
+    solver.solve(b, target_func.x.petsc_vec)
 
 
 class LaplaceProblem:
@@ -77,7 +77,7 @@ class LaplaceProblem:
                     facets = self.mt.find(marker)
                     dofs = fem.locate_dofs_topological(self.V, self.fdim, facets)
                     uD = fem.Function(self.V)
-                    uD.vector.array = bcs_marker[btype][marker]
+                    uD.x.petsc_vec = bcs_marker[btype][marker]
                     bc = fem.dirichletbc(uD, dofs)
                 elif btype == 'face':
                     facets = self.mt.find(marker)
@@ -138,7 +138,7 @@ class LaplaceProblem:
 
     def get_array_gradient(self, array, linear=False):
         uh = fem.Function(self.V)
-        uh.vector.array = array
+        uh.x.petsc_vec = array
         if linear:
             g = self.get_linear_gradient(uh)
         else:
@@ -203,7 +203,7 @@ class TrajectoryProblem:
                     facets = self.mt.find(marker)
                     dofs = fem.locate_dofs_topological(self.V, self.fdim, facets)
                     uD = fem.Function(self.V)
-                    uD.vector.array = bcs_marker[btype][marker]
+                    uD.x.petsc_vec = bcs_marker[btype][marker]
                     bc = fem.dirichletbc(uD, dofs)
                 elif btype == 'face':
                     facets = self.mt.find(marker)
@@ -266,7 +266,7 @@ class TrajectoryProblem:
         grad_lap = ufl.grad(lap)
         g = fem.Function(self.Vg)
         project(grad_lap, g)
-        garr = g.vector.array.reshape([-1,3])
+        garr = g.x.petsc_vec.reshape([-1,3])
         norm_g = np.linalg.norm(garr, axis=1)
 
         # normalizing
@@ -281,7 +281,7 @@ class TrajectoryProblem:
             _, nn = tree.query(midpoints[below_thresh])
             t[below_thresh] = t[nn]
 
-        g.vector.array = t.flatten()
+        g.x.petsc_vec = t.flatten()
 
         return g
 
@@ -313,14 +313,14 @@ class TrajectoryProblem:
         x2 = self.solve_trajectory_problem(bc2)
 
         uh = fem.Function(self.V)
-        uh.vector.array = x1/(x1 + x2)
+        uh.x.petsc_vec = x1/(x1 + x2)
 
         return uh
 
 
     def solve_with_vector(self, bcs_marker, vector):
         g = fem.Function(self.Vg)
-        g.vector.array = vector.flatten()
+        g.x.petsc_vec = vector.flatten()
 
         # Set problem
         self.tp_a = ufl.dot(ufl.grad(self.u), g) * self.v_tp * ufl.dx
@@ -339,7 +339,7 @@ class TrajectoryProblem:
         x2 = self.solve_trajectory_problem(bc2)
 
         uh = fem.Function(self.V)
-        uh.vector.array = x1/(x1 + x2)
+        uh.x.petsc_vec = x1/(x1 + x2)
 
         return uh
 
