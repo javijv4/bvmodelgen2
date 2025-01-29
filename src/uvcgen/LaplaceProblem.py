@@ -77,7 +77,7 @@ class LaplaceProblem:
                     facets = self.mt.find(marker)
                     dofs = fem.locate_dofs_topological(self.V, self.fdim, facets)
                     uD = fem.Function(self.V)
-                    uD.x.petsc_vec = bcs_marker[btype][marker]
+                    uD.x.petsc_vec.array = bcs_marker[btype][marker]
                     bc = fem.dirichletbc(uD, dofs)
                 elif btype == 'face':
                     facets = self.mt.find(marker)

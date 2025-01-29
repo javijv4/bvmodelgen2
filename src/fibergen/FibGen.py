@@ -75,9 +75,9 @@ class FibGen:
         if return_gradient:
             glap = self.LapSolver.get_linear_gradient(lap)
 
-        lap = lap.vector.array[self.bv_corr]
+        lap = lap.x.petsc_vec.array[self.bv_corr]
         if return_gradient:
-            glap = glap.vector.array.reshape([-1,3])[self.bv_corr]
+            glap = glap.x.petsc_vec.array.reshape([-1,3])[self.bv_corr]
             glap = glap/np.linalg.norm(glap, axis=1)[:,None]
             return lap, glap
         else:
