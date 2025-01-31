@@ -31,11 +31,11 @@ def run_coord(mesh_, bdata_, bcs_marker, return_grad=False, diffusion=False):
     if return_grad:
         grad = LapSolver.get_linear_gradient(lap)
         dxio.visualize_function('grad.xdmf', grad)
-        grad = grad.vector.array.reshape([-1, 3])[corr]
-        lap = lap.vector.array[corr]
+        grad = grad.x.petsc_vec.array.reshape([-1, 3])[corr]
+        lap = lap.x.petsc_vec.array[corr]
         return lap, grad
 
-    return lap.vector.array[corr]
+    return lap.x.petsc_vec.array[corr]
 
 
 def run_trajectory_coord(mesh_, bdata_, bcs_marker, vector=None):
@@ -49,7 +49,7 @@ def run_trajectory_coord(mesh_, bdata_, bcs_marker, vector=None):
         lap = TPSolver.solve(bcs_marker)
 
     corr, _ = dxio.find_vtu_dx_mapping(mesh)
-    lap = lap.vector.array[corr]
+    lap = lap.x.petsc_vec.array[corr]
 
     return lap
 
@@ -137,7 +137,7 @@ class UVCGen:
             else:
                 corr, _ = dxio.find_vtu_dx_mapping(self.lv_mesh, cells=True)
             g = self.lv_LapSolver.get_array_gradient(array, linear=linear)
-            g = g.vector.array.reshape([-1,3])[corr]
+            g = g.x.petsc_vec.array.reshape([-1,3])[corr]
         elif which == 'rv':
             self.init_rv_mesh(uvc)
             array = uvc.rv_mesh.point_data[func][self.rv_icorr]
@@ -146,7 +146,7 @@ class UVCGen:
             else:
                 corr, _ = dxio.find_vtu_dx_mapping(self.rv_mesh, cells=True)
             g = self.rv_LapSolver.get_array_gradient(array, linear=linear)
-            g = g.vector.array.reshape([-1,3])[corr]
+            g = g.x.petsc_vec.array.reshape([-1,3])[corr]
 
         return g
 
@@ -167,7 +167,7 @@ class UVCGen:
             bcs_septum['face'][self.bndry['rv_epi']] = 1
 
         septum = self.LapSolver.solve(bcs_septum)
-        septum = septum.vector.array[self.bv_corr]
+        septum = septum.x.petsc_vec.array[self.bv_corr]
         uvc.bv_mesh.point_data['septum'] = septum
 
         return septum
@@ -189,7 +189,7 @@ class UVCGen:
         septum = self.LapSolver.solve(bcs_septum)
         uvc.bv_mesh.point_data['septum'] = septum
 
-        return septum.vector.array[self.bv_corr]
+        return septum.x.petsc_vec.array[self.bv_corr]
 
 
     def run_longitudinal(self, uvc, method='laplace', which='all'):
@@ -206,7 +206,7 @@ class UVCGen:
             bv_solver = self.get_solver(method, 'bv')
             # bv_long = bv_solver.solve_diffusion(bcs_marker)
             bv_long = bv_solver.solve(bcs_marker)
-            bv_long = bv_long.vector.array[self.bv_corr]
+            bv_long = bv_long.x.petsc_vec.array[self.bv_corr]
             uvc.bv_mesh.point_data['long'] = bv_long
             ret += [bv_long]
 
@@ -221,7 +221,7 @@ class UVCGen:
             lv_solver = self.get_solver(method, 'lv')
             # lv_long = lv_solver.solve_diffusion(bcs_marker)
             lv_long = lv_solver.solve(bcs_marker)
-            lv_long = lv_long.vector.array[self.lv_corr]
+            lv_long = lv_long.x.petsc_vec.array[self.lv_corr]
             uvc.lv_mesh.point_data['long'] = lv_long
             ret += [lv_long]
 
@@ -309,7 +309,7 @@ class UVCGen:
 
         # rv_solver = self.get_solver('laplace', 'rv')
         # rv_long = rv_solver.solve(bcs_marker)
-        # rv_long = rv_long.vector.array[self.rv_corr]
+        # rv_long = rv_long.x.petsc_vec.array[self.rv_corr]
 
         # dxio.visualize_meshtags('mt.xdmf', self.rv_mesh, self.rv_mt)
         # uvc.rv_mesh.point_data['long'] = rv_long
@@ -325,7 +325,7 @@ class UVCGen:
         self.init_lv_mesh(uvc)
         lv_solver = self.get_solver(method, 'lv')
         lv_long = lv_solver.solve(bcs_marker)
-        lv_long = lv_long.vector.array[self.lv_corr]
+        lv_long = lv_long.x.petsc_vec.array[self.lv_corr]
         uvc.lv_mesh.point_data['long'] = lv_long
 
         # Correct
@@ -378,7 +378,7 @@ class UVCGen:
                 bcs_lv['face'][self.bndry['epi']] = 1
 
             trans_lv = lv_solver.solve(bcs_lv)
-            trans_lv = trans_lv.vector.array[self.lv_corr]
+            trans_lv = trans_lv.x.petsc_vec.array[self.lv_corr]
             uvc.lv_mesh.point_data['trans'] = trans_lv
 
             ret += [trans_lv]
@@ -395,7 +395,7 @@ class UVCGen:
             else:
                 bcs_rv['face'][self.bndry['epi']] = 1
             trans_rv = rv_solver.solve(bcs_rv)
-            trans_rv = trans_rv.vector.array[self.rv_corr]
+            trans_rv = trans_rv.x.petsc_vec.array[self.rv_corr]
             uvc.rv_mesh.point_data['trans'] = trans_rv
 
             ret += [trans_rv]
@@ -469,7 +469,7 @@ class UVCGen:
                   self.bndry['rv_lv_post']: -1}}
         lv_solver = self.get_solver(method, 'lv')
         lv_circ1 = lv_solver.solve(bcs_lv)
-        lv_circ1 = lv_circ1.vector.array[self.lv_corr]
+        lv_circ1 = lv_circ1.x.petsc_vec.array[self.lv_corr]
         uvc.lv_mesh.point_data['lv_circ1'] = lv_circ1
 
         return lv_circ1
@@ -522,14 +522,14 @@ class UVCGen:
                       self.bndry['sep_0n']: np.zeros(len(bc_point))}}
             lv_solver = self.get_solver(method, 'lv')
             lv_circ2 = lv_solver.solve(bcs_lv)
-            lv_circ2_1 = lv_circ2.vector.array[self.lv_corr]
+            lv_circ2_1 = lv_circ2.x.petsc_vec.array[self.lv_corr]
 
             bcs_lv = {'function': {self.bndry['lat_pi']: np.ones(len(bc_point)),
                       self.bndry['lat_mpi']: np.ones(len(bc_point)),
                       self.bndry['sep_0p']: np.zeros(len(bc_point))}}
             lv_solver = self.get_solver(method, 'lv')
             lv_circ2 = lv_solver.solve(bcs_lv)
-            lv_circ2_2 = lv_circ2.vector.array[self.lv_corr]
+            lv_circ2_2 = lv_circ2.x.petsc_vec.array[self.lv_corr]
 
             lv_circ2 = (lv_circ2_1 + lv_circ2_2)/2
             lv_circ2 = uvc.correct_lv_circ2(lv_circ2)
@@ -560,7 +560,7 @@ class UVCGen:
             bcs_lv['face'][self.bndry['epi']] = -1
 
         lv_circ3 = lv_solver.solve(bcs_lv)
-        lv_circ3 = lv_circ3.vector.array[self.lv_corr]
+        lv_circ3 = lv_circ3.x.petsc_vec.array[self.lv_corr]
         uvc.lv_mesh.point_data['lv_circ3'] = lv_circ3
 
         return lv_circ3
@@ -618,7 +618,7 @@ class UVCGen:
             bcs_lv = {'face': {self.bndry['circ_ant']: 1,
                       self.bndry['circ_post']: -1}}
             lv_circ4 = lv_solver.solve(bcs_lv)
-            lv_circ4_1 = lv_circ4.vector.array[self.lv_corr]
+            lv_circ4_1 = lv_circ4.x.petsc_vec.array[self.lv_corr]
 
             bc_point = uvc.lv_mesh.point_data['bc4_p']
             ant_marker = np.where(bc_point == 1)[0]
@@ -635,7 +635,7 @@ class UVCGen:
             bcs_lv = {'face': {self.bndry['circ_ant']: 1,
                       self.bndry['circ_post']: -1}}
             lv_circ4 = lv_solver.solve(bcs_lv)
-            lv_circ4_2 = lv_circ4.vector.array[self.lv_corr]
+            lv_circ4_2 = lv_circ4.x.petsc_vec.array[self.lv_corr]
 
             lv_circ4 = (lv_circ4_1 + lv_circ4_2)/2
             uvc.create_lv_circ_bc5(lv_circ4)
@@ -712,7 +712,7 @@ class UVCGen:
                            self.bndry['tv']: -1,
                            self.bndry['pv']: 1}}
         rv_circ1 = rv_solver.solve(bcs_rv)
-        rv_circ1 = rv_circ1.vector.array[self.rv_corr]/3
+        rv_circ1 = rv_circ1.x.petsc_vec.array[self.rv_corr]/3
         uvc.rv_mesh.point_data['rv_circ1'] = rv_circ1
 
         return rv_circ1
@@ -786,7 +786,7 @@ class UVCGen:
                   'point': bcs_point,}
 
         lv_circ = lv_solver.solve(bcs_lv)
-        lv_circ = lv_circ.vector.array[self.lv_corr]
+        lv_circ = lv_circ.x.petsc_vec.array[self.lv_corr]
         lv_circ = uvc.correct_lv_circ_by_subdomain(lv_circ)
 
         uvc.lv_mesh.point_data['circ'] = lv_circ*np.pi
@@ -797,7 +797,7 @@ class UVCGen:
         bcs_rv = {'face': {self.bndry['rvlv_ant']: 1/3,
                   self.bndry['rvlv_post']: -1/3}}
         rv_circ = rv_solver.solve(bcs_rv)
-        rv_circ = rv_circ.vector.array[self.rv_corr]
+        rv_circ = rv_circ.x.petsc_vec.array[self.rv_corr]
         uvc.rv_mesh.point_data['circ'] = rv_circ*np.pi
 
         return lv_circ, rv_circ
@@ -813,7 +813,7 @@ class UVCGen:
             bcs_lv['face'][self.bndry['rvlv_ant']] = 1
             bcs_lv['face'][self.bndry['rvlv_post']] = 1
         lv_rvlv = lv_solver.solve(bcs_lv)
-        lv_rvlv = lv_rvlv.vector.array[self.lv_corr]
+        lv_rvlv = lv_rvlv.x.petsc_vec.array[self.lv_corr]
         uvc.lv_mesh.point_data['lv_rvlv'] = lv_rvlv
 
         return lv_rvlv
@@ -855,7 +855,7 @@ class UVCGen:
 
         ot_solver = self.get_solver(method, 'ot')
         ot_circ = ot_solver.solve(bcs_marker)
-        ot_circ = ot_circ.vector.array[self.ot_corr]
+        ot_circ = ot_circ.x.petsc_vec.array[self.ot_corr]
         uvc.ot_mesh.point_data['ot_circ1'] = ot_circ
 
         return ot_circ
@@ -950,7 +950,7 @@ class UVCGen:
 
             ot_solver = self.get_solver(method, 'ot')
             ot_circ2 = ot_solver.solve(bcs_ot)
-            ot_circ2 = ot_circ2.vector.array[self.ot_corr]
+            ot_circ2 = ot_circ2.x.petsc_vec.array[self.ot_corr]
         uvc.ot_mesh.point_data['circ'] = ot_circ2
 
         return ot_circ2

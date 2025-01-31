@@ -138,7 +138,7 @@ class LaplaceProblem:
 
     def get_array_gradient(self, array, linear=False):
         uh = fem.Function(self.V)
-        uh.x.petsc_vec = array
+        uh.x.petsc_vec.array =  array
         if linear:
             g = self.get_linear_gradient(uh)
         else:
@@ -203,7 +203,7 @@ class TrajectoryProblem:
                     facets = self.mt.find(marker)
                     dofs = fem.locate_dofs_topological(self.V, self.fdim, facets)
                     uD = fem.Function(self.V)
-                    uD.x.petsc_vec = bcs_marker[btype][marker]
+                    uD.x.petsc_vec.array =  bcs_marker[btype][marker]
                     bc = fem.dirichletbc(uD, dofs)
                 elif btype == 'face':
                     facets = self.mt.find(marker)
@@ -281,7 +281,7 @@ class TrajectoryProblem:
             _, nn = tree.query(midpoints[below_thresh])
             t[below_thresh] = t[nn]
 
-        g.x.petsc_vec = t.flatten()
+        g.x.petsc_vec.array =  t.flatten()
 
         return g
 
@@ -313,14 +313,14 @@ class TrajectoryProblem:
         x2 = self.solve_trajectory_problem(bc2)
 
         uh = fem.Function(self.V)
-        uh.x.petsc_vec = x1/(x1 + x2)
+        uh.x.petsc_vec.array =  x1/(x1 + x2)
 
         return uh
 
 
     def solve_with_vector(self, bcs_marker, vector):
         g = fem.Function(self.Vg)
-        g.x.petsc_vec = vector.flatten()
+        g.x.petsc_vec.array =  vector.flatten()
 
         # Set problem
         self.tp_a = ufl.dot(ufl.grad(self.u), g) * self.v_tp * ufl.dx
@@ -339,7 +339,7 @@ class TrajectoryProblem:
         x2 = self.solve_trajectory_problem(bc2)
 
         uh = fem.Function(self.V)
-        uh.x.petsc_vec = x1/(x1 + x2)
+        uh.x.petsc_vec.array =  x1/(x1 + x2)
 
         return uh
 
